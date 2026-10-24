@@ -94,7 +94,9 @@ SolveDiagnostics Solver_CPU::solve(WINDSGeneralData *WGD, const int &itermax)
 
   qes::log::info() << "[Solver]\t Running Serial CPU Solver ..." << std::endl;
 
-  while (iter < itermax && max_error > tol) {
+  // The initial max_error is a sentinel, not a measured convergence value.
+  // Even a tolerance >= 1 must evaluate the field before reporting success.
+  while (iter < itermax && (iter == 0 || max_error > tol)) {
 
     // Save previous iteration values for error calculation
     //    uses stl vector's assignment copy function, assign
