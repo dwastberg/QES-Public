@@ -73,6 +73,11 @@ public:
 
   Fires *fires = nullptr; /**< :document this: */
 
+  // In-memory fields and their nested pointer vectors are non-owning views.
+  // The caller owns each input (including buildings, sensors and time series)
+  // and must keep them alive until WINDSGeneralData has been destroyed.
+  ~WINDSInputData() override = default;
+
   WINDSInputData()
   {
     fileOptions = 0;

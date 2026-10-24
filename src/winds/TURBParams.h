@@ -56,17 +56,17 @@ class TURBParams : public ParseInterface
 private:
 protected:
 public:
-  int methodLocalMixing;
-  bool save2file;
+  int methodLocalMixing{};
+  bool save2file{};
   std::string filename, varname;
 
-  int mlSamplesPerAirCell;
+  int mlSamplesPerAirCell{};
 
-  Vector3Float *sigConst;
-  bool flagNonLocalMixing;
-  int buildingWallFlag, terrainWallFlag;
-  float turbUpperBound;
-  float backgroundMixing;
+  Vector3Float *sigConst = nullptr;
+  bool flagNonLocalMixing{};
+  int buildingWallFlag{}, terrainWallFlag{};
+  float turbUpperBound{};
+  float backgroundMixing{};
 
   TURBParams() : methodLocalMixing(0), save2file(false),
                  filename(""), varname("mixlength"),

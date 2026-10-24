@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <math.h>
@@ -43,10 +45,9 @@
 class CutBuilding;
 
 using namespace std;
-using std::cerr;
+
 using std::endl;
 using std::vector;
-using std::cout;
 
 #define MIN_S(x, y) ((x) < (y) ? (x) : (y))
 
@@ -67,13 +68,13 @@ private:
 protected:
   ///@{
   /** Position value of the building */
-  float x_min, x_max, y_min, y_max;
+  float x_min{}, x_max{}, y_min{}, y_max{};
   ///@}
   ///@{
   /** Center of a cell. */
-  float x_cent, y_cent;
+  float x_cent{}, y_cent{};
   ///@}
-  float polygon_area; /**< Polygon area */
+  float polygon_area{}; /**< Polygon area */
 
 
   bool rectangular_flag = false; /**< Is the building rectangular */
@@ -92,12 +93,12 @@ protected:
 
   ///@{
   /** :document this: */
-  float x1, x2, y1, y2;
+  float x1{}, x2{}, y1{}, y2{};
   ///@}
 
   std::vector<float> upwind_rel_dir; /**< :document this: */
 
-  CutBuilding *cutBuilding;
+  CutBuilding *cutBuilding = nullptr;
 
 public:
   PolyBuilding()

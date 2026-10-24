@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include "util/QESException.h"
 
 #include "Domain.h"
 
@@ -6,6 +9,15 @@ using namespace qes;
 
 Domain::Domain(const int &nx, const int &ny, const int &nz, const float &dx, const float &dy, const float &dz)
 {
+  if (nx < 1 || ny < 1 || nz < 1
+      || !std::isfinite(dx) || !std::isfinite(dy) || !std::isfinite(dz)
+      || dx <= 0.0f || dy <= 0.0f || dz <= 0.0f)
+    throw InputError("Grid dimensions and spacing must be positive and finite");
+  const long double faces = (static_cast<long double>(nx) + 1)
+    * (static_cast<long double>(ny) + 1) * (static_cast<long double>(nz) + 2);
+  if (faces > std::numeric_limits<int>::max())
+    throw InputError("Grid exceeds QES's supported index range");
+
   // Internally this information is converted to the staggered grid
   // representation, which adds 1 to nx and ny and 2 to nz (to
   // account for staggered grid and ghost cell).
@@ -31,31 +43,8 @@ Domain::Domain(const int &nx, const int &ny, const int &nz, const float &dx, con
 }
 
 Domain::Domain(const Vector3Int& domain, const Vector3Float& grid)
-{
-  // Internally this information is converted to the staggered grid
-  // representation, which adds 1 to nx and ny and 2 to nz (to
-  // account for staggered grid and ghost cell).
-  domainData.nx = domain[0] + 1;
-  domainData.ny = domain[1] + 1;
-  domainData.nz = domain[2] + 2;
-
-  domainData.dx = grid[0];
-  domainData.dy = grid[1];
-  domainData.dz = grid[2];
-  domainData.dxy = std::min(domainData.dx, domainData.dy);
-
-  // Definition of the grid
-  // ??? how to define the vertical grid with the different option
-  defineVerticalStretching(domainData.dz);
-  /*if (WID->simParams->verticalStretching == 0) {// Uniform vertical grid
-    defineVerticalStretching(dz);
-  } else if (WID->simParams->verticalStretching == 1) {// Stretched vertical grid
-    defineVerticalStretching(WID->simParams->dz_value);// Read in custom dz values and set them to dz_array
-  }*/
-  defineVerticalGrid();
-  defineHorizontalGrid();
-}
-
+  : Domain(domain[0], domain[1], domain[2], grid[0], grid[1], grid[2])
+{}
 
 
 void Domain::defineVerticalStretching(const float &dz_value)

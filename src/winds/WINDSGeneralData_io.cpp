@@ -29,6 +29,8 @@
  ****************************************************************************/
 
 
+
+#include "util/QESLog.h"
 #include "WINDSGeneralData.h"
 #include "DTEHeightField.h"
 #include "WRFInput.h"
@@ -52,7 +54,7 @@ void WINDSGeneralData::initializeWRFSensors(const WINDSInputData *WID)
       wrf_nx = wrf_ptr->fm_nx;
       wrf_ny = wrf_ptr->fm_ny;
 
-      windProfiler = new WindProfilerWRF();
+      windProfiler = std::make_unique<WindProfilerWRF>();
 
       // FM -> this should be added on wrf-input (read time form wrf)
       // initialize our time info...
@@ -134,11 +136,11 @@ void WINDSGeneralData::initializeWRFSensors(const WINDSInputData *WID)
     }
 
     else if (wrf_ptr->statData.size() > 0) {
-      std::cout << "Size of WRF station/sensor profile data: " << wrf_ptr->statData.size() << std::endl;
+      qes::log::info() << "Size of WRF station/sensor profile data: " << wrf_ptr->statData.size() << std::endl;
       WID->metParams->sensors.resize(wrf_ptr->statData.size());
 
       for (auto i = 0u; i < wrf_ptr->statData.size(); i++) {
-        std::cout << "Station " << i << " ("
+        qes::log::info() << "Station " << i << " ("
                   << wrf_ptr->statData[i].xCoord << ", "
                   << wrf_ptr->statData[i].yCoord << ")" << std::endl;
 
@@ -172,7 +174,7 @@ void WINDSGeneralData::initializeWRFSensors(const WINDSInputData *WID)
         //   }
 
         for (int t = 0; t < 1; t++) {
-          std::cout << "\tTime Series: " << t << std::endl;
+          qes::log::info() << "\tTime Series: " << t << std::endl;
 
           time_t tmp = t;
           QEStime tmp2(tmp);
@@ -187,7 +189,7 @@ void WINDSGeneralData::initializeWRFSensors(const WINDSInputData *WID)
 
 
           for (size_t p = 0; p < wrf_ptr->statData[i].profiles[t].size(); p++) {
-            std::cout << "\t" << wrf_ptr->statData[i].profiles[t][p].zCoord
+            qes::log::info() << "\t" << wrf_ptr->statData[i].profiles[t][p].zCoord
                       << ", " << wrf_ptr->statData[i].profiles[t][p].ws
                       << ", " << wrf_ptr->statData[i].profiles[t][p].wd << std::endl;
 
@@ -385,7 +387,7 @@ void WINDSGeneralData::initializeTerrain(const WINDSInputData *WID)
       ///////////////////////////////////
 
       auto start_stair = std::chrono::high_resolution_clock::now();
-      std::cout << "[QES-WINDS]\t Stair-step method for terrain..." << std::endl;
+      qes::log::info() << "[QES-WINDS]\t Stair-step method for terrain..." << std::endl;
 
       for (int i = 0; i < domain.nx() - 1; i++) {
         for (int j = 0; j < domain.ny() - 1; j++) {
@@ -406,7 +408,7 @@ void WINDSGeneralData::initializeTerrain(const WINDSInputData *WID)
       auto finish_stair = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
       std::chrono::duration<float> elapsed_stair = finish_stair - start_stair;
-      std::cout << "\t\t elapsed time: " << elapsed_stair.count() << " s\n";
+      qes::log::info() << "\t\t elapsed time: " << elapsed_stair.count() << " s\n";
     }
 
     if (WID->simParams->meshTypeFlag == 1 && WID->simParams->readCoefficientsFlag == 0) {
@@ -415,7 +417,7 @@ void WINDSGeneralData::initializeTerrain(const WINDSInputData *WID)
       //////////////////////////////////
 
       auto start_cut = std::chrono::high_resolution_clock::now();
-      std::cout << "[QES-WINDS]\t Cut-cell method for terrain..." << std::endl;
+      qes::log::info() << "[QES-WINDS]\t Cut-cell method for terrain..." << std::endl;
 
       // Calling calculateCoefficient function to calculate area fraction coefficients for cut-cells
       // WID->simParams->DTE_heightField->setCells(cells, this, WID);
@@ -424,13 +426,13 @@ void WINDSGeneralData::initializeTerrain(const WINDSInputData *WID)
       auto finish_cut = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
       std::chrono::duration<float> elapsed_cut = finish_cut - start_cut;
-      std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+      qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
     }
   }
 
 void WINDSGeneralData::initializeShapefileBuildings(const WINDSInputData *WID)
 {
-      std::cout << "[QES-WINDS]\t Creating buildings from shapefile..." << std::flush;
+      qes::log::info() << "[QES-WINDS]\t Creating buildings from shapefile..." << std::flush;
 
 
       float corner_height, min_height;
@@ -439,7 +441,7 @@ void WINDSGeneralData::initializeShapefileBuildings(const WINDSInputData *WID)
       WID->buildingsParams->SHPData->getLocalDomain(shpDomainSize);
       WID->buildingsParams->SHPData->getMinExtent(minExtent);
 
-      // printf("\tShapefile Origin = (%.6f,%.6f)\n", minExtent[0], minExtent[1]);
+      // qes::log::writef(qes::log::Level::info, "\tShapefile Origin = (%.6f,%.6f)\n", minExtent[0], minExtent[1]);
 
       // If the shapefile is not covering the whole domain or the UTM coordinates
       // of the QES domain is different than shapefile origin
@@ -485,18 +487,19 @@ void WINDSGeneralData::initializeShapefileBuildings(const WINDSInputData *WID)
         // Loop to create each of the polygon buildings read in from the shapefile
         int bId = allBuildingsV.size();
 
-        // allBuildingsV.push_back(new PolyBuilding(WID, this, pIdx));
-        allBuildingsV.push_back(new PolyBuilding(WID->buildingsParams->SHPData->m_polygons[pIdx],
-                                                 WID->buildingsParams->SHPData->m_features[WID->buildingsParams->shpHeightField][pIdx]
-                                                   * WID->buildingsParams->heightFactor,
-                                                 base_height[bId],
-                                                 bId));
+        auto building = std::make_unique<PolyBuilding>(
+          WID->buildingsParams->SHPData->m_polygons[pIdx],
+          WID->buildingsParams->SHPData->m_features[WID->buildingsParams->shpHeightField][pIdx]
+            * WID->buildingsParams->heightFactor,
+          base_height[bId], bId);
+        allBuildingsV.push_back(building.get());
+        ownedBuildings_.push_back(std::move(building));
         building_id.push_back(bId);
         allBuildingsV[bId]->setPolyBuilding(this);
         allBuildingsV[bId]->setCellFlags(WID, this, bId);
         effective_height.push_back(allBuildingsV[bId]->height_eff);
       }
-      std::cout << "\r[QES-WINDS]\t Creating buildings from shapefile... [DONE]" << std::endl;
+      qes::log::info() << "\r[QES-WINDS]\t Creating buildings from shapefile... [DONE]" << std::endl;
     }
 
 void WINDSGeneralData::readCoefficients(const WINDSInputData *WID)
@@ -536,15 +539,15 @@ void WINDSGeneralData::readCoefficients(const WINDSInputData *WID)
 WINDSGeneralData::WINDSGeneralData(const std::string &inputFile)
   : domain(inputFile)
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[QES-WINDS]\t Initialization of wind model...\n";
-  std::cout << "[QES-WINDS]\t Loading QES-winds fields " << std::endl;
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[QES-WINDS]\t Initialization of wind model...\n";
+  qes::log::info() << "[QES-WINDS]\t Loading QES-winds fields " << std::endl;
 
   // fullname passed to WINDSGeneralData
   input = new NetCDFInput(inputFile);
 
   // create wall instance for BC
-  wall = new Wall();
+  wall = std::make_unique<Wall>();
 
   // nx,ny - face centered value (consistant with QES-Winds)
   int nx, ny, nz;
@@ -555,8 +558,7 @@ WINDSGeneralData::WINDSGeneralData(const std::string &inputFile)
   input->getDimensionSize("z_face", nz);
 
   if ((nx != domain.nx()) || (ny != domain.ny()) || (nz != domain.nz())) {
-    std::cerr << "[ERROR] \t data size incompatible " << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] \t data size incompatible " << std::endl; throw qes::InputError(message.str()); }
   }
 
   // nt - number of time instance in data
@@ -584,7 +586,7 @@ WINDSGeneralData::WINDSGeneralData(const std::string &inputFile)
       timestamp.push_back(tmp + t[k]);
     }
   } else {
-    std::cout << "\t\t Loading " << nt << " time steps" << std::endl;
+    qes::log::info() << "\t\t Loading " << nt << " time steps" << std::endl;
     for (int k = 0; k < nt; k++) {
       std::vector<size_t> start_time;
       std::vector<size_t> count_time;
@@ -600,7 +602,7 @@ WINDSGeneralData::WINDSGeneralData(const std::string &inputFile)
       }
 
       QEStime time(tmp);
-      std::cout << "\t\t " << time << std::endl;
+      qes::log::info() << "\t\t " << time << std::endl;
 
       timestamp.push_back(time);
     }
@@ -622,14 +624,14 @@ WINDSGeneralData::WINDSGeneralData(const std::string &inputFile)
   if (!NcVar_terrain.isNull()) {// => terrain data in QES-Winds file
     input->getVariableData("terrain", start, count_2d, terrain);
   } else {// => no external terrain data provided
-    std::cout << "[WINDS Data] \t no terrain data found -> assumed flat" << std::endl;
+    qes::log::info() << "[WINDS Data] \t no terrain data found -> assumed flat" << std::endl;
   }
 }
 
 void WINDSGeneralData::loadNetCDFData(int stepin)
 {
 
-  std::cout << "[QES-WINDS] \t Loading data at step " << stepin
+  qes::log::info() << "[QES-WINDS] \t Loading data at step " << stepin
             << " (" << timestamp[stepin] << ")" << std::endl;
 #if 0
   std::vector<size_t> start_time;
@@ -647,7 +649,7 @@ void WINDSGeneralData::loadNetCDFData(int stepin)
     tmp[i] = timestamp_tmp[i];
   }
   QEStime time(tmp);
-  std::cout << "read at time " << time << std::endl;
+  qes::log::info() << "read at time " << time << std::endl;
 
   timestamp.push_back(time);
 #endif
@@ -681,7 +683,7 @@ void WINDSGeneralData::loadNetCDFData(int stepin)
     input->getVariableData("m", start, count_cc, m);
     input->getVariableData("n", start, count_cc, n);
   } else {
-    std::cout << "[WINDS Data] \t no SORcoeff data found -> assumed e,f,g,h,m,n=1" << std::endl;
+    qes::log::info() << "[WINDS Data] \t no SORcoeff data found -> assumed e,f,g,h,m,n=1" << std::endl;
   }
 
   // face-center variables
@@ -706,7 +708,7 @@ void WINDSGeneralData::loadNetCDFData(int stepin)
 
 void WINDSGeneralData::downscaleHRRR(const WINDSInputData *WID)
 {
-  std::cout << "Processing HRRR data..." << std::flush;
+  qes::log::info() << "Processing HRRR data..." << std::flush;
   hrrrInputData = new HRRRData(WID->hrrrInput->HRRRFile);
   hrrrInputData->findHRRRSensors(WID, this);
 
@@ -898,5 +900,5 @@ void WINDSGeneralData::downscaleHRRR(const WINDSInputData *WID)
       }
     }
   }
-  std::cout << "[done]" << std::endl;
+  qes::log::info() << "[done]" << std::endl;
 }

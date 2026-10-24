@@ -63,6 +63,17 @@ PolyBuilding::PolyBuilding(const std::vector<polyVert> &iSP, float iH, float iBH
 
 void PolyBuilding::setPolyBuilding(WINDSGeneralData *WGD)
 {
+  if (!WGD || polygonVertices.size() < 4 || !std::isfinite(H) || H <= 0
+      || !std::isfinite(base_height))
+    throw qes::InputError("A building needs a closed footprint, positive height and finite base elevation");
+  for (const auto &vertex : polygonVertices) {
+    if (!std::isfinite(vertex.x_poly) || !std::isfinite(vertex.y_poly))
+      throw qes::InputError("Building footprint coordinates must be finite");
+  }
+  if (polygonVertices.front().x_poly != polygonVertices.back().x_poly
+      || polygonVertices.front().y_poly != polygonVertices.back().y_poly)
+    throw qes::InputError("Building footprint must be closed");
+
 
   building_cent_x = 0.0;// x-coordinate of the centroid of the building
   building_cent_y = 0.0;// y-coordinate of the centroid of the building

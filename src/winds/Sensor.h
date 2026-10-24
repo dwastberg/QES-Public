@@ -72,20 +72,20 @@ public:
 
   ///@{
   /** Location of the sensor in QES domain */
-  float site_xcoord, site_ycoord;
+  float site_xcoord = 0.0f, site_ycoord = 0.0f;
   ///@}
 
   int site_coord_flag = 1; /**< Sensor site coordinate system (1=QES (default), 2=UTM, 3=Lat/Lon) */
-  int site_UTM_zone; /**< UTM zone of the sensor site (if site_coord_flag = 2) */
+  int site_UTM_zone = 0; /**< UTM zone of the sensor site (if site_coord_flag = 2) */
 
   ///@{
   /** x and y components of site coordinate in UTM (if site_coord_flag = 2) */
-  float site_UTM_x, site_UTM_y;
+  float site_UTM_x = 0.0f, site_UTM_y = 0.0f;
   ///@}
 
   ///@{
   /** x and y components of site coordinate in Latitude and Longitude (if site_coord_flag = 3) */
-  float site_lon, site_lat;
+  float site_lon = 0.0f, site_lat = 0.0f;
   ///@}
 
   std::vector<TimeSeries *> TS; /**< array of timestep informastion for a sensor */

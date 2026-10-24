@@ -62,47 +62,47 @@ class Building : public ParseInterface
 {
 protected:
 public:
-  int ID; /**< :document this: */
-  float building_rotation; /**< :document this: */
-  float canopy_rotation; /**< :document this: */
-  float x_start; /**< :document this: */
-  float y_start; /**< :document this: */
-  float L; /**< Length of the building */
-  float W; /**< Width of the building */
+  int ID{}; /**< :document this: */
+  float building_rotation{}; /**< :document this: */
+  float canopy_rotation{}; /**< :document this: */
+  float x_start{}; /**< :document this: */
+  float y_start{}; /**< :document this: */
+  float L{}; /**< Length of the building */
+  float W{}; /**< Width of the building */
 
   ///@{
   /** index of start and end of building in stair-step method */
-  int i_start, i_end, j_start, j_end, k_end, k_start;
+  int i_start{}, i_end{}, j_start{}, j_end{}, k_end{}, k_start{};
   ///@}
 
   ///@{
   /** index of start and end of building in cut-cell method */
-  int i_cut_start, i_cut_end, j_cut_start, j_cut_end, k_cut_end;
+  int i_cut_start{}, i_cut_end{}, j_cut_start{}, j_cut_end{}, k_cut_end{};
   ///@}
 
-  float H; /**< Height of the building */
-  float base_height; /**< Base height of the building */
+  float H{}; /**< Height of the building */
+  float base_height{}; /**< Base height of the building */
 
-  float upwind_dir; /**< Wind direction of initial velocity at the height of building at the centroid */
-  float height_eff; /**< Effective height of the building */
-  float building_cent_x; /**< x coordinate of buildings' centroid */
-  float building_cent_y; /**< y coordinate of buildings' centorid */
-  int i_building_cent; /**< :document this: */
-  int j_building_cent; /**< :document this: */
+  float upwind_dir{}; /**< Wind direction of initial velocity at the height of building at the centroid */
+  float height_eff{}; /**< Effective height of the building */
+  float building_cent_x{}; /**< x coordinate of buildings' centroid */
+  float building_cent_y{}; /**< y coordinate of buildings' centorid */
+  int i_building_cent{}; /**< :document this: */
+  int j_building_cent{}; /**< :document this: */
 
 
-  double u0_h; /**< u velocity at the height of building at the centroid */
-  double v0_h; /**< v velocity at the height of building at the centroid */
+  double u0_h{}; /**< u velocity at the height of building at the centroid */
+  double v0_h{}; /**< v velocity at the height of building at the centroid */
 
-  float width_eff; /**< Effective width of the building */
-  float length_eff; /**< Effective length of the building */
-  float small_dimension; /**< Smaller of the height (H) and the effective cross-wind width (Weff) */
-  float long_dimension; /**< Larger of the height (H) and the effective cross-wind width (Weff) */
+  float width_eff{}; /**< Effective width of the building */
+  float length_eff{}; /**< Effective length of the building */
+  float small_dimension{}; /**< Smaller of the height (H) and the effective cross-wind width (Weff) */
+  float long_dimension{}; /**< Larger of the height (H) and the effective cross-wind width (Weff) */
 
-  float L_over_H; /**< Length over height of the building */
-  float H_over_L; /**< Height over length of the building */
-  float W_over_H; /**< Width over height of the building */
-  float Lr; /**< Length of far wake zone */
+  float L_over_H{}; /**< Length over height of the building */
+  float H_over_L{}; /**< Height over length of the building */
+  float W_over_H{}; /**< Width over height of the building */
+  float Lr{}; /**< Length of far wake zone */
 
   std::vector<polyVert> polygonVertices; /**< :document this: */
 

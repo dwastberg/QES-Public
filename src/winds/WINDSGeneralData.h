@@ -33,6 +33,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <cmath>
 
 
@@ -95,6 +96,8 @@ class WINDSInputData;
 class WINDSGeneralData
 {
 private:
+  void validateSensors(const WINDSInputData *) const;
+  std::vector<std::unique_ptr<Building>> ownedBuildings_;
   void initializeWRFSensors(const WINDSInputData *WID);
   void initializeTerrain(const WINDSInputData *WID);
   void initializeShapefileBuildings(const WINDSInputData *WID);
@@ -108,6 +111,10 @@ public:
   explicit WINDSGeneralData(const std::string &inputFile);
 
   virtual ~WINDSGeneralData() = default;
+  WINDSGeneralData(const WINDSGeneralData &) = delete;
+  WINDSGeneralData &operator=(const WINDSGeneralData &) = delete;
+  // allBuildingsV borrows input buildings. Only shapefile-created buildings
+  // belong to ownedBuildings_; destruction never deletes caller geometry.
 
   void mergeSort(std::vector<float> &effective_height,
                  std::vector<int> &building_id);
@@ -183,8 +190,8 @@ public:
   float halo_x{}, halo_y{};
   int halo_index_x{}, halo_index_y{};
 
-  float UTMx, UTMy;
-  int UTMZone;
+  float UTMx{}, UTMy{};
+  int UTMZone{};
 
   // long numcell_cout{}; /**< :document this: */
   // long numcell_cout_2d; /**< :document this: */
@@ -279,13 +286,13 @@ public:
   std::vector<double> mixingLengths; /**< :document this: */
 
   // HRRR Input class
-  HRRRData *hrrrInputData;
+  HRRRData *hrrrInputData = nullptr;
   std::vector<int> nearest_site_id;
   std::vector<std::vector<int>> closest_site_ids;
   // Sensor* sensor;      may not need this now
 
   // wind profiler class
-  WindProfilerType *windProfiler{}; /**< pointer to the wind profiler class, used to interp wind */
+  std::unique_ptr<WindProfilerType> windProfiler; /**< pointer to the wind profiler class, used to interp wind */
 
   int id{}; /**< :document this: */
 
@@ -303,7 +310,7 @@ public:
   // std::vector<float> canopy_ustar;   /**< Velocity gradient at the top of canopy */
   // std::vector<float> canopy_d;	   /**< Canopy displacement length */
 
-  Canopy *canopy{}; /**< :document this: */
+  std::unique_ptr<Canopy> canopy; /**< :document this: */
 
 
   float max_velmag{}; /**< In polygonWake */
@@ -321,8 +328,8 @@ public:
 
   Cell *cells{}; /**< :document this: */
   // bool DTEHFExists = false;
-  CutCell *cut_cell; /**< :document this: */
-  Wall *wall; /**< :document this: */
+  CutCell *cut_cell = nullptr; /**< :document this: */
+  std::unique_ptr<Wall> wall; /**< :document this: */
 
   // NetCDFInput* NCDFInput;     /**< :document this: */
   ///@{
@@ -339,7 +346,7 @@ public:
   std::vector<std::vector<float>> coeff;
   ///@}
 
-  WINDSDeviceData d_data;
+  WINDSDeviceData d_data{};
   void allocateDevice();
   void freeDevice();
   void copyDataToDevice();

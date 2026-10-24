@@ -33,6 +33,8 @@
  * @brief :document this:
  */
 
+
+#include "util/QESLog.h"
 #include "WINDSGeneralData.h"
 
 #include <utility>
@@ -49,8 +51,8 @@
 WINDSGeneralData::WINDSGeneralData(qes::Domain domain_in)
   : domain(std::move(domain_in))
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[QES-WINDS]\t Initialization of wind model...\n";
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[QES-WINDS]\t Initialization of wind model...\n";
 
   // tie(nx, ny, nz) = domain.getDomainCellNum();
   // tie(dx, dy, dz) = domain.getDomainSize();// Grid resolution in x-direction
@@ -68,7 +70,12 @@ WINDSGeneralData::WINDSGeneralData(qes::Domain domain_in)
 WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain_in, int solverType)
   : domain(std::move(domain_in))
 {
+  if (!WID || !WID->simParams || !WID->metParams)
+    throw qes::InputError("Simulation parameters and meteorological inputs are required");
+
 #if !QES_ENABLE_IO
+  if (WID->simParams->meshTypeFlag != 0 || WID->simParams->verticalStretching != 0)
+    throw qes::UnsupportedFeature("The in-memory core currently requires stair-step buildings and a uniform grid");
   if (WID->simParams->DTE_heightField || WID->simParams->DTE_mesh
       || !WID->simParams->demFile.empty() || !WID->simParams->wrfFile.empty()
       || WID->simParams->wrfInputData || WID->simParams->wrfCoupling
@@ -80,8 +87,8 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
   }
 #endif
 
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[QES-WINDS]\t Initialization of wind model...\n";
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[QES-WINDS]\t Initialization of wind model...\n";
 
   // converting the domain rotation to radians from degrees -- input
   // assumes degrees
@@ -148,37 +155,37 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
     if (solverType == 1) {
       if (WID->hrrrInput) {
         if (WID->hrrrInput->interpolationScheme == 0) {
-          windProfiler = new WindProfilerBarnCPU();
+          windProfiler = std::make_unique<WindProfilerBarnCPU>();
         } else {
 #if QES_ENABLE_IO
-          windProfiler = new WindProfilerHRRR();
+          windProfiler = std::make_unique<WindProfilerHRRR>();
 #else
           throw qes::UnsupportedFeature("HRRR requires QES_ENABLE_IO=ON");
 #endif
         }
       } else {
-        windProfiler = new WindProfilerBarnCPU();
+        windProfiler = std::make_unique<WindProfilerBarnCPU>();
       }
 #ifdef HAS_CUDA
     } else {
       if (WID->hrrrInput) {
         if (WID->hrrrInput->interpolationScheme == 0) {
-          windProfiler = new WindProfilerBarnGPU();
+          windProfiler = std::make_unique<WindProfilerBarnGPU>();
         } else {
 #if QES_ENABLE_IO
-          windProfiler = new WindProfilerHRRR();
+          windProfiler = std::make_unique<WindProfilerHRRR>();
 #else
           throw qes::UnsupportedFeature("HRRR requires QES_ENABLE_IO=ON");
 #endif
         }
       } else {
-        windProfiler = new WindProfilerBarnGPU();
+        windProfiler = std::make_unique<WindProfilerBarnGPU>();
       }
     }
 #else
     } else {
-      std::cout << "No CUDA support - using CPU Barnes" << std::endl;
-      windProfiler = new WindProfilerBarnCPU();
+      qes::log::info() << "No CUDA support - using CPU Barnes" << std::endl;
+      windProfiler = std::make_unique<WindProfilerBarnCPU>();
     }
 #endif
 
@@ -198,6 +205,7 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
       }
       // If there are more than one timestep
       // if (WID->simParams->totalTimeIncrements > 0) {
+      validateSensors(WID);
       // Loop to include all the timestep for the first sensor
       for (size_t i = 0; i < WID->metParams->sensors[0]->TS.size(); i++) {
         sensortime.push_back(WID->metParams->sensors[0]->TS[i]->time);
@@ -238,7 +246,7 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
     if (WID->simParams->totalTimeIncrements == 0) {
       totalTimeIncrements = timestamp.size();
     } else if (WID->simParams->totalTimeIncrements > timestamp.size()) {
-      std::cout << "[WARNING] not enough timestamp in senors" << std::endl;
+      qes::log::warning() << "[WARNING] not enough timestamp in senors" << std::endl;
       totalTimeIncrements = timestamp.size();
     } else {
       totalTimeIncrements = WID->simParams->totalTimeIncrements;
@@ -254,8 +262,8 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
   }
 
   // Pete could move to input param processing...
-  assert(WID->metParams->sensors.size() > 0);// extra
-  std::cout << "[QES-WINDS]\t Sensors have been loaded (total sensors = " << WID->metParams->sensors.size() << ")." << std::endl;
+  validateSensors(WID);
+  qes::log::info() << "[QES-WINDS]\t Sensors have been loaded (total sensors = " << WID->metParams->sensors.size() << ")." << std::endl;
 
   // /////////////////////////
   // Calculation of z0 domain info MAY need to move to WINDSInputData
@@ -375,11 +383,13 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
   }
 
     if (!WID->buildingsParams->buildings.empty()) {
-      std::cout << "[QES-WINDS]\t Consolidating building data..." << std::endl;
+      qes::log::info() << "[QES-WINDS]\t Consolidating building data..." << std::endl;
     }
 
     float corner_height, min_height;
     for (size_t i = 0; i < WID->buildingsParams->buildings.size(); i++) {
+      if (!WID->buildingsParams->buildings[i])
+        throw qes::InputError("Building input cannot be null");
       allBuildingsV.push_back(WID->buildingsParams->buildings[i]);
       int j = allBuildingsV.size() - 1;
       building_id.push_back(j);
@@ -417,36 +427,36 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
     // do this... (remember some are canopies) so we may need a
     // virtual function in the Building class to get the appropriate
     // data for the sort.
-    std::cout << "[QES-WINDS]\t Sorting buildings by height..." << std::flush;
+    qes::log::info() << "[QES-WINDS]\t Sorting buildings by height..." << std::flush;
     mergeSort(effective_height, building_id);
-    std::cout << "\r[QES-WINDS]\t Sorting buildings by height... [DONE]" << std::endl;
+
 
     auto buildingsetup_finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
     std::chrono::duration<float> elapsed_cut = buildingsetup_finish - buildingsetup_start;
-    std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+    qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
   }
 
 
   // Add all the Canopy* to it (they are derived from Building)
-  canopy = 0;
+  canopy.reset();
   if (WID->vegetationParams) {
-    canopy = new Canopy(WID, this);
+    canopy = std::make_unique<Canopy>(WID, this);
     canopy->setCanopyElements(WID, this);
   }
 
   auto wallsetup_start = std::chrono::high_resolution_clock::now();
 
-  std::cout << "[QES-WINDS]\t Defining solid walls..." << std::flush;
-  wall = new Wall();
+  qes::log::info() << "[QES-WINDS]\t Defining solid walls..." << std::flush;
+  wall = std::make_unique<Wall>();
   // Boundary condition for building edges
   wall->defineWalls(this);
   wall->solverCoefficients(this);
-  std::cout << "\r[QES-WINDS]\t Defining solid walls... [DONE]" << std::endl;
+
 
   auto wallsetup_finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsed_wall = wallsetup_finish - wallsetup_start;
-  std::cout << "\t\t elapsed time: " << elapsed_wall.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_wall.count() << " s\n";
 
   for (auto id = 0u; id < icellflag.size(); id++) {
     icellflag_initial[id] = icellflag[id];
@@ -522,7 +532,7 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
 
 void WINDSGeneralData::allocateMemory()
 {
-  std::cout << "[QES-WINDS]\t Allocating Memory..." << std::flush;
+  qes::log::info() << "[QES-WINDS]\t Allocating Memory..." << std::flush;
 
   // long numcell_cout = domain.numCellCentered();  // (nx - 1) * (ny - 1) * (nz - 2);// Total number of cell-centered values in domain
   long numcell_cout_2d = domain.numHorizontalCellCentered();// (nx - 1) * (ny - 1);// Total number of horizontal cell-centered values in domain
@@ -575,14 +585,17 @@ void WINDSGeneralData::allocateMemory()
   v.resize(numcell_face, 0.0);
   w.resize(numcell_face, 0.0);
 
-  std::cout << "\r[QES-WINDS]\t Allocating Memory... [DONE]" << std::endl;
 }
 
 
 
 void WINDSGeneralData::applyWindProfile(const WINDSInputData *WID, int timeIndex, int solveType)
 {
-  std::cout << "[QES-WINDS]\t Applying Wind Profile...\n";
+  validateSensors(WID);
+  if (!windProfiler || timeIndex < 0 || static_cast<size_t>(timeIndex) >= sensortime.size())
+    throw qes::InputError("Invalid wind-profile time index or unprepared wind profiler");
+
+  qes::log::info() << "[QES-WINDS]\t Applying Wind Profile...\n";
 
   u0.clear();
   v0.clear();
@@ -611,7 +624,7 @@ void WINDSGeneralData::applyWindProfile(const WINDSInputData *WID, int timeIndex
 #if 0
   if (WID->simParams->wrfCoupling) {
 
-    std::cout << "Using WRF Coupling..." << std::endl;
+    qes::log::info() << "Using WRF Coupling..." << std::endl;
 
     WRFInput *wrf_ptr = WID->simParams->wrfInputData;
 
@@ -662,7 +675,7 @@ void WINDSGeneralData::applyWindProfile(const WINDSInputData *WID, int timeIndex
   auto end_InputWindProfile = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
   std::chrono::duration<float> elapsed_InputWindProfile = end_InputWindProfile - start_InputWindProfile;
-  std::cout << "\t\t elapsed time: " << elapsed_InputWindProfile.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_InputWindProfile.count() << " s\n";
   return;
 }
 
@@ -670,13 +683,13 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
 {
 
   auto start_param = std::chrono::high_resolution_clock::now();// Start recording execution time
-  std::cout << "[QES-WINDS]\t Applying parameterizations...\n";
+  qes::log::info() << "[QES-WINDS]\t Applying parameterizations...\n";
 
   // ///////////////////////////////////////
   // Generic Parameterization Related Stuff
   // ///////////////////////////////////////
   if (canopy) {
-    std::cout << "[QES-WINDS]\t Applying vegetation parameterization...\n";
+    qes::log::info() << "[QES-WINDS]\t Applying vegetation parameterization...\n";
     canopy->applyCanopyVegetation(this);
   }
 
@@ -685,7 +698,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
     //   Upwind Cavity Parameterization     ///
     ///////////////////////////////////////////
     if (WID->buildingsParams->upwindCavityFlag > 0) {
-      std::cout << "[QES-WINDS]\t Applying upwind cavity parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying upwind cavity parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->upwindCavity(WID, this);
       }
@@ -695,7 +708,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
     //   Far-Wake and Cavity Parameterizations     ///
     //////////////////////////////////////////////////
     if (WID->buildingsParams->wakeFlag > 0) {
-      std::cout << "[QES-WINDS]\t Applying wake behind building parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying wake behind building parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->polygonWake(WID, this, building_id[i]);
       }
@@ -705,12 +718,12 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
     //   Street Canyon Parameterization     ///
     ///////////////////////////////////////////
     if (WID->buildingsParams->streetCanyonFlag == 1) {
-      std::cout << "[QES-WINDS]\t Applying street canyon parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying street canyon parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->streetCanyon(this);
       }
     } else if (WID->buildingsParams->streetCanyonFlag == 2) {
-      std::cout << "[QES-WINDS]\t Applying street canyon parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying street canyon parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->streetCanyonModified(this);
       }
@@ -720,7 +733,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
     //      Sidewall Parameterization       ///
     ///////////////////////////////////////////
     if (WID->buildingsParams->sidewallFlag > 0) {
-      std::cout << "[QES-WINDS]\t Applying sidewall parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying sidewall parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->sideWall(WID, this);
       }
@@ -731,7 +744,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
     //      Rooftop Parameterization        ///
     ///////////////////////////////////////////
     if (WID->buildingsParams->rooftopFlag > 0) {
-      std::cout << "[QES-WINDS]\t Applying rooftop parameterization...\n";
+      qes::log::info() << "[QES-WINDS]\t Applying rooftop parameterization...\n";
       for (size_t i = 0; i < allBuildingsV.size(); i++) {
         allBuildingsV[building_id[i]]->rooftop(WID, this);
       }
@@ -742,7 +755,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
   // Generic Parameterization Related Stuff
   // ///////////////////////////////////////
   if (canopy) {
-    std::cout << "[QES-WINDS]\t Applying canopy wake parameterization...\n";
+    qes::log::info() << "[QES-WINDS]\t Applying canopy wake parameterization...\n";
     canopy->applyCanopyWake(this);
   }
 
@@ -751,10 +764,10 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
   ///////////////////////////////////////////
   /*if (WID->buildingsParams->streetCanyonFlag > 0 && WID->buildingsParams->streetIntersectionFlag > 0 && allBuildingsV.size() > 0)
     {
-    std::cout << "Applying Blended Region Parameterization...\n";
+    qes::log::info() << "Applying Blended Region Parameterization...\n";
     allBuildingsV[0]->streetIntersection (WID, this);
     allBuildingsV[0]->poisson (WID, this);
-    std::cout << "Blended Region Parameterization done...\n";
+    qes::log::info() << "Blended Region Parameterization done...\n";
     }*/
 
 
@@ -763,7 +776,7 @@ void WINDSGeneralData::applyParametrizations(const WINDSInputData *WID)
   auto finish_param = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
   std::chrono::duration<float> elapsed_param = finish_param - start_param;
-  std::cout << "\t\t elapsed time: " << elapsed_param.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_param.count() << " s\n";
 }
 
 void WINDSGeneralData::resetICellFlag()
@@ -789,16 +802,7 @@ QEStime WINDSGeneralData::nextTimeInstance(const int &index, const float &durati
 
 void WINDSGeneralData::printTimeProgress(int index)
 {
-  float percentage = (float)(index + 1) / (float)totalTimeIncrements;
-  int val = (int)floor(percentage * 100);
-  int lpad = (int)(percentage * PBWIDTH);
-  int rpad = PBWIDTH - lpad;
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[QES-WINDS]\t Wind field at " << timestamp[index] << " "
-            << "(" << index + 1 << "/" << totalTimeIncrements << ")." << std::endl;
-  printf("%3d%% [%.*s%*s]\n", val, lpad, PBSTR, rpad, "");
-  fflush(stdout);
-  std::cout << "----------------------------" << std::endl;
+  qes::log::info() << "[QES-WINDS] Time: " << timestamp.at(index) << std::endl;
 }
 
 
@@ -938,4 +942,40 @@ float WINDSGeneralData::canopyBisection(float ustar, float z0, float canopy_top,
   }
 
   return d;
+}
+
+void WINDSGeneralData::validateSensors(const WINDSInputData *WID) const
+{
+  if (!WID || !WID->simParams || !WID->metParams || WID->metParams->sensors.empty())
+    throw qes::InputError("At least one wind sensor is required");
+  for (const auto *sensor : WID->metParams->sensors) {
+    if (!sensor || sensor->TS.empty())
+      throw qes::InputError("Each wind sensor needs a non-empty time series");
+    if (sensor->site_coord_flag == 1 && !WID->hrrrInput) {
+      const float x = sensor->site_xcoord, y = sensor->site_ycoord;
+      if (!std::isfinite(x) || !std::isfinite(y) || x < 0 || y < 0
+          || x >= (domain.nx() - 1) * domain.dx()
+          || y >= (domain.ny() - 1) * domain.dy())
+        throw qes::InputError("Wind sensor must be inside the horizontal domain");
+    }
+#if !QES_ENABLE_IO
+    if (sensor->site_coord_flag != 1)
+      throw qes::UnsupportedFeature("The in-memory core requires local sensor coordinates");
+#endif
+    for (const auto *series : sensor->TS) {
+      if (!series || series->site_z_ref.empty()
+          || series->site_z_ref.size() != series->site_U_ref.size()
+          || series->site_z_ref.size() != series->site_wind_dir.size())
+        throw qes::InputError("Sensor heights, speeds and directions must have matching non-zero lengths");
+      if (!std::isfinite(series->site_z0) || series->site_z0 <= 0
+          || !std::isfinite(series->site_one_overL))
+        throw qes::InputError("Sensor roughness must be positive and stability must be finite");
+      for (size_t i = 0; i < series->site_z_ref.size(); ++i) {
+        if (!std::isfinite(series->site_z_ref[i]) || series->site_z_ref[i] <= 0
+            || !std::isfinite(series->site_U_ref[i]) || series->site_U_ref[i] < 0
+            || !std::isfinite(series->site_wind_dir[i]))
+          throw qes::InputError("Sensor heights must be positive; speeds non-negative; all profile values finite");
+      }
+    }
+  }
 }

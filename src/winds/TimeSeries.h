@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include "util/ParseInterface.h"
 #include "util/QEStime.h"
 #include "util/QESout.h"
@@ -50,7 +52,7 @@ class TimeSeries : public ParseInterface
 private:
 public:
   int site_blayer_flag = 1; /**< :document this: */
-  float site_z0; /**< :document this: */
+  float site_z0 = 0.1f; /**< :document this: */
   // float site_p = 0.0; /**< :document this: */
 
   ///@{
@@ -58,8 +60,8 @@ public:
   std::vector<float> site_wind_dir, site_z_ref, site_U_ref;
   ///@}
 
-  float site_one_overL; /**< :document this: */
-  float site_canopy_H, site_atten_coeff; /**< :document this: */
+  float site_one_overL = 0.0f; /**< :document this: */
+  float site_canopy_H = 0.0f, site_atten_coeff = 0.0f; /**< :document this: */
 
   QEStime time; /**< :document this: */
 
@@ -98,8 +100,7 @@ public:
       time = timeStamp;
       QEStime testtime(timeEpoch);
       if (testtime != time) {
-        std::cerr << "[ERROR] invalid timeStamp (timeEpoch != timeStamp)\n";
-        exit(EXIT_FAILURE);
+        { std::ostringstream message; message << "[ERROR] invalid timeStamp (timeEpoch != timeStamp)\n"; throw qes::InputError(message.str()); }
       }
     }
   }

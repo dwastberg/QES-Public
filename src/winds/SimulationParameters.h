@@ -58,10 +58,10 @@ public:
   Vector3Float grid; /**< :Cell sizes in each direction: */
   int verticalStretching = 0; /**< :Defines grid type in z-direction (0-unifrom (default), 1-custom): */
   std::vector<float> dz_value; /**< :Array holding values of dz if the verticalStretching is 1: */
-  unsigned int totalTimeIncrements; /**< :Total number of time steps: */
+  unsigned int totalTimeIncrements = 1; /**< :Total number of time steps: */
   int logLawFlag = 0; /**< :Log Law flag to apply the log law (0-off (default), 1-on): */
   int maxIterations = 500; /**< :Maximum number of iterations (default = 500): */
-  double tolerance = 1e-9; /**< :Convergence criteria, error threshold (default = 1e-9): */
+  double tolerance = 1e-5; /**< :Convergence criteria, error threshold (default = 1e-9): */
   int meshTypeFlag = 0; /**< :Type of meshing scheme (0-Stair step (original QES) (default), 1-Cut-cell method: */
   float domainRotation = 0; /**< :Rotation angle of domain relative to true north: */
   int originFlag = 0; /**< :Origin flag (0- DEM coordinates (default), 1- UTM coordinates): */
@@ -108,7 +108,7 @@ public:
 
   std::string wrfFile; /**< :document this: */
   WRFInput *wrfInputData = nullptr; /**< :document this: */
-  int wrfSensorSample; /**< :document this: */
+  int wrfSensorSample = 1; /**< :document this: */
   bool wrfCoupling = false;
 
   enum DomainInputType {
@@ -117,7 +117,7 @@ public:
     DEMOnly,
     UNKNOWN
   };
-  DomainInputType m_domIType;
+  DomainInputType m_domIType = UNKNOWN;
 
   SimulationParameters()
   {
