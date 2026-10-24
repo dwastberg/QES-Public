@@ -226,7 +226,7 @@ Solver_GPU_GlobalMemory::Solver_GPU_GlobalMemory(qes::Domain domain_in, const fl
   cudaSetDevice(0);
 }
 
-void Solver_GPU_GlobalMemory::solve(WINDSGeneralData *WGD, const int &itermax)
+SolveDiagnostics Solver_GPU_GlobalMemory::solve(WINDSGeneralData *WGD, const int &itermax)
 {
   auto [nx, ny, nz] = domain.getDomainCellNum();
   auto [dx, dy, dz] = domain.getDomainSize();
@@ -364,4 +364,5 @@ void Solver_GPU_GlobalMemory::solve(WINDSGeneralData *WGD, const int &itermax)
   // std::cout << "Error:" << max_error[0] << "\n";
   // std::cout << "Number of iterations:" << iter << "\n";// Print the number of iterations
   std::cout << "\t\t elapsed time: " << elapsed.count() << " s\n";// Print out elapsed execution time
+  return {iter, max_error, tol, max_error <= tol};
 }

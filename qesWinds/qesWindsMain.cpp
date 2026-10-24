@@ -28,6 +28,8 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+#include "util/QESConsole.h"
+#include "util/QESLog.h"
 #include <iostream>
 
 #include "util/ParseException.h"
@@ -57,6 +59,9 @@
 
 int main(int argc, char *argv[])
 {
+  qes::installConsoleHandler();
+  try {
+
   QESout::splashScreen();
 
   // ///////////////////////////////////
@@ -157,7 +162,11 @@ int main(int argc, char *argv[])
 
     // Applying the log law and solver iteratively
     if (WID->simParams->logLawFlag == 1) {
-      solver->solve(WGD, tempMaxIter);
+      {
+        const auto diagnostics = solver->solve(WGD, tempMaxIter);
+        qes::log::writef(qes::log::Level::info, "[Solver]\t Residual after %d itertations: %2.9f\n",
+          diagnostics.iterations, diagnostics.max_lagrange_multiplier_change);
+      }
 
       WGD->u0 = WGD->u;
       WGD->v0 = WGD->v;
@@ -168,7 +177,11 @@ int main(int argc, char *argv[])
       WGD->w = WGD->w0;
     } else {
       // Run WINDS simulation code
-      solver->solve(WGD, tempMaxIter);
+      {
+        const auto diagnostics = solver->solve(WGD, tempMaxIter);
+        qes::log::writef(qes::log::Level::info, "[Solver]\t Residual after %d itertations: %2.9f\n",
+          diagnostics.iterations, diagnostics.max_lagrange_multiplier_change);
+      }
     }
 
     // std::cout << "Solver done!\n";
@@ -204,13 +217,21 @@ int main(int argc, char *argv[])
     WID->simParams->wrfInputData->endWRFSession();
 
   // /////////////////////////////
-  delete WID;
-  delete WGD;
+  delete solver;
   delete TGD;
+  delete WGD;
+  delete WID;
   for (auto p : outputVec) {
     delete p;
   }
 
   std::cout << "QES-Winds Exiting." << std::endl;
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
+  } catch (const std::exception &error) {
+    qes::log::error() << error.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    qes::log::error() << "Unknown QES failure" << std::endl;
+    return EXIT_FAILURE;
+  }
 }

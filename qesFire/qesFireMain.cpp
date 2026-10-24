@@ -26,6 +26,8 @@
  * You should have received a copy of the GNU General Public License
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
+#include "util/QESConsole.h"
+#include "util/QESLog.h"
 #include <iostream>
 #include <netcdf>
 #include <stdlib.h>
@@ -66,6 +68,9 @@
 
 int main(int argc, char *argv[])
 {
+  qes::installConsoleHandler();
+  try {
+
   QESout::splashScreen();
 
   // ///////////////////////////////////
@@ -193,7 +198,11 @@ int main(int argc, char *argv[])
     /**
      * Run WINDS simulation code
      **/
-    solver->solve(WGD, WID->simParams->maxIterations);
+    {
+      const auto diagnostics = solver->solve(WGD, WID->simParams->maxIterations);
+      qes::log::writef(qes::log::Level::info, "[Solver]\t Residual after %d itertations: %2.9f\n",
+        diagnostics.iterations, diagnostics.max_lagrange_multiplier_change);
+    }
 
     /**
      * Run turbulence if specified
@@ -256,7 +265,11 @@ int main(int argc, char *argv[])
       /**
        * Run run wind solver to calculate mass conserved velocity field including fire-induced winds
        */
-      solver->solve(WGD, WID->simParams->maxIterations);
+      {
+        const auto diagnostics = solver->solve(WGD, WID->simParams->maxIterations);
+        qes::log::writef(qes::log::Level::info, "[Solver]\t Residual after %d itertations: %2.9f\n",
+          diagnostics.iterations, diagnostics.max_lagrange_multiplier_change);
+      }
       if (TGD != nullptr) TGD->run();
 
       std::cout << "-------------------------------------------------------------------" << std::endl;
@@ -330,5 +343,12 @@ int main(int argc, char *argv[])
   }
 
 
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
+  } catch (const std::exception &error) {
+    qes::log::error() << error.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    qes::log::error() << "Unknown QES failure" << std::endl;
+    return EXIT_FAILURE;
+  }
 }

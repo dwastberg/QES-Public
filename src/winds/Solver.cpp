@@ -43,6 +43,8 @@
  * @sa SharedMemory
  */
 
+
+#include "util/QESLog.h"
 #include "Solver.h"
 
 // duplication of this macro
@@ -55,14 +57,6 @@
 /**
  * Shows progress of the solving process by printing the percentage.
  */
-void Solver::printProgress(float percentage)
-{
-  int val = (int)(percentage * 100);
-  int lpad = (int)(percentage * PBWIDTH);
-  int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
-  fflush(stdout);
-}
 
 
 /**
@@ -83,9 +77,31 @@ Solver::Solver(qes::Domain domain_in, const float &tolerance)
     B(eta * pow((domain.dx() / domain.dz()), 2.0))
 
 {
+  if (!std::isfinite(tolerance) || tolerance < std::numeric_limits<float>::epsilon())
+    throw qes::InputError("Solver tolerance must be finite and at least float epsilon");
   tol = tolerance;
 
   lambda.resize(domain.numCellCentered(), 0.0);
   lambda_old.resize(domain.numCellCentered(), 0.0);
   R.resize(domain.numCellCentered(), 0.0);
+}
+
+void Solver::validateSolve(const WINDSGeneralData *WGD, int iterations) const
+{
+  if (!WGD || iterations < 1)
+    throw qes::InputError("A prepared wind field and a positive iteration limit are required");
+  if (WGD->domain.getDomainCellNum() != domain.getDomainCellNum())
+    throw qes::InputError("Solver and wind-field domains differ");
+  for (const auto *values : {&WGD->u0, &WGD->v0, &WGD->w0}) {
+    if (values->size() != static_cast<size_t>(domain.numFaceCentered()))
+      throw qes::InputError("Initial wind arrays have the wrong length");
+    if (!std::all_of(values->begin(), values->end(), [](float x) { return std::isfinite(x); }))
+      throw qes::InputError("Initial wind arrays must be finite");
+  }
+  for (const auto *values : {&WGD->e, &WGD->f, &WGD->g, &WGD->h, &WGD->m, &WGD->n}) {
+    if (values->size() != static_cast<size_t>(domain.numCellCentered()))
+      throw qes::InputError("Solver coefficient arrays have the wrong length");
+    if (!std::all_of(values->begin(), values->end(), [](float x) { return std::isfinite(x); }))
+      throw qes::InputError("Solver coefficients must be finite");
+  }
 }

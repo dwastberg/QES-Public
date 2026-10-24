@@ -30,6 +30,8 @@
 
 /** @file Solver_CPU_RB.cpp */
 
+
+#include "util/QESLog.h"
 #include "Solver_CPU_RB.h"
 
 /** :document this:
@@ -38,8 +40,10 @@
  * Complete by continuting to write implementation details here.
  * (remove :document this: tag when done)
  */
-void Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
+SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
 {
+  validateSolve(WGD, itermax);
+
   auto startOfSolveMethod = std::chrono::high_resolution_clock::now();// Start recording execution time
 
   /***************************************************************
@@ -90,7 +94,7 @@ void Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
   float max_error = 1.0;
   // int i_max, j_max, k_max;
 
-  std::cout << "[Solver]\t Running Red/Black CPU Solver ..." << std::endl;
+  qes::log::info() << "[Solver]\t Running Red/Black CPU Solver ..." << std::endl;
 
   while (iter < itermax && max_error > tol) {
 
@@ -184,12 +188,12 @@ void Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
     iter += 1;
   }
 
-  // std::cout << "Solved!\n";
+  // qes::log::info() << "Solved!\n";
 
-  // std::cout << "Number of iterations:" << iter << "\n";// Print the number of iterations
-  // std::cout << "Error:" << max_error << "\n";
-  // std::cout << "tol:" << tol << "\n";
-  printf("[Solver]\t Residual after %d itertations: %2.9f\n", iter, max_error);
+  // qes::log::info() << "Number of iterations:" << iter << "\n";// Print the number of iterations
+  // qes::log::info() << "Error:" << max_error << "\n";
+  // qes::log::info() << "tol:" << tol << "\n";
+
 
 #pragma omp parallel private(icell_cent, icell_face) default(none) shared(WGD, lambda)
   {
@@ -286,6 +290,7 @@ void Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
   auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsedTotal = finish - startOfSolveMethod;
   std::chrono::duration<float> elapsedSolve = finish - startSolveSection;
-  std::cout << "\t\t elapsed time: " << elapsedTotal.count() << " s\n";// Print out elapsed execution time
-  // std::cout << "Elapsed solve time: " << elapsedSolve.count() << " s\n";// Print out elapsed execution time
+  qes::log::info() << "\t\t elapsed time: " << elapsedTotal.count() << " s\n";// Print out elapsed execution time
+  // qes::log::info() << "Elapsed solve time: " << elapsedSolve.count() << " s\n";// Print out elapsed execution time
+  return {iter, max_error, tol, std::isfinite(max_error) && max_error <= tol};
 }

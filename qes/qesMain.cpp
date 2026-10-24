@@ -28,6 +28,8 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+#include "util/QESConsole.h"
+#include "util/QESLog.h"
 #include <iostream>
 
 #include "util/QESout.h"
@@ -59,6 +61,9 @@
 
 int main(int argc, char *argv[])
 {
+  qes::installConsoleHandler();
+  try {
+
   QESout::splashScreen();
 
   // ///////////////////////////////////
@@ -149,7 +154,11 @@ int main(int argc, char *argv[])
     WGD->applyParametrizations(WID);
 
     // Run WINDS simulation code
-    solver->solve(WGD, WID->simParams->maxIterations);
+    {
+      const auto diagnostics = solver->solve(WGD, WID->simParams->maxIterations);
+      qes::log::writef(qes::log::Level::info, "[Solver]\t Residual after %d itertations: %2.9f\n",
+        diagnostics.iterations, diagnostics.max_lagrange_multiplier_change);
+    }
 
     // Run turbulence
     if (TGD != nullptr) TGD->run();
@@ -183,5 +192,12 @@ int main(int argc, char *argv[])
   delete PID;
   delete PGD;
 
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
+  } catch (const std::exception &error) {
+    qes::log::error() << error.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    qes::log::error() << "Unknown QES failure" << std::endl;
+    return EXIT_FAILURE;
+  }
 }

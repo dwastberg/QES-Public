@@ -28,6 +28,8 @@
  * along with QES-Plume. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+#include "util/QESConsole.h"
+#include "util/QESLog.h"
 #include <iostream>
 #include <netcdf>
 #include <stdlib.h>
@@ -61,6 +63,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
+  qes::installConsoleHandler();
+  try {
+
   QESout::splashScreen();
 
   // parse command line arguments
@@ -104,5 +109,12 @@ int main(int argc, char **argv)
   delete PID;
   delete PGD;
 
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
+  } catch (const std::exception &error) {
+    qes::log::error() << error.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    qes::log::error() << "Unknown QES failure" << std::endl;
+    return EXIT_FAILURE;
+  }
 }

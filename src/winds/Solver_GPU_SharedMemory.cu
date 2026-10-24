@@ -200,7 +200,7 @@ __global__ void finalVelocityShared(float *d_lambda, float *d_u, float *d_v, flo
 }
 
 
-void Solver_GPU_SharedMemory::solve(WINDSGeneralData *WGD, const int &itermax)
+SolveDiagnostics Solver_GPU_SharedMemory::solve(WINDSGeneralData *WGD, const int &itermax)
 {
   auto [nx, ny, nz] = domain.getDomainCellNum();
   auto [dx, dy, dz] = domain.getDomainSize();
@@ -334,4 +334,5 @@ void Solver_GPU_SharedMemory::solve(WINDSGeneralData *WGD, const int &itermax)
 
   std::chrono::duration<float> elapsed = finish - start;
   std::cout << "\t\t Elapsed time: " << elapsed.count() << " s\n";// Print out elapsed execution time
+  return {iter, max_error[0], tol, max_error[0] <= tol};
 }

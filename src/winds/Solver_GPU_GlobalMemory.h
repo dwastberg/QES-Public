@@ -86,5 +86,5 @@ protected:
    * @param WGD :document this:
    * @param itermax :document this:
    */
-  virtual void solve(WINDSGeneralData *, const int &) override;
+  virtual SolveDiagnostics solve(WINDSGeneralData *, const int &) override;
 };

@@ -30,6 +30,8 @@
 
 /** @file SolverFactory.cpp */
 
+
+#include "util/QESLog.h"
 #include "SolverFactory.h"
 
 Solver *SolverFactory::create(const int &solveType, const qes::Domain &domain, const float &tolerance)
@@ -47,7 +49,7 @@ Solver *SolverFactory::create(const int &solveType, const qes::Domain &domain, c
     // While we get this verified on CUDA 12.8, we will
     // replace use of it with the GlobalMemory solver.
     // solver = new Solver_GPU_DynamicParallelism(domain, tolerance);
-    std::cout << "The Global Memory GPU solver will be used in place of the Dynamic Parallelism GPU Solver for the time being." << std::endl;
+    qes::log::info() << "The Global Memory GPU solver will be used in place of the Dynamic Parallelism GPU Solver for the time being." << std::endl;
     solver = new Solver_GPU_GlobalMemory(domain, tolerance);
   } else if (solveType == Global_M) {
     solver = new Solver_GPU_GlobalMemory(domain, tolerance);
@@ -55,7 +57,7 @@ Solver *SolverFactory::create(const int &solveType, const qes::Domain &domain, c
     solver = new Solver_GPU_SharedMemory(domain, tolerance);
 #endif
   } else {
-    QESout::error("Invalid solver type");
+    throw qes::InputError("Invalid or unavailable solver type");
   }
   return solver;
 }

@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -72,8 +74,8 @@ public:
   Solver_GPU_SharedMemory(qes::Domain domain_in, const float &tolerance)
     : Solver(std::move(domain_in), tolerance)
   {
-    std::cout << "-------------------------------------------------------------------" << std::endl;
-    std::cout << "[Solver]\t Initializing Shared Memory Solver (GPU) ..." << std::endl;
+    qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+    qes::log::info() << "[Solver]\t Initializing Shared Memory Solver (GPU) ..." << std::endl;
   }
 
 protected:
@@ -93,5 +95,5 @@ protected:
    * @param WGD :document this:
    * @param itermax :document this:
    */
-  virtual void solve(WINDSGeneralData *, const int &) override;
+  virtual SolveDiagnostics solve(WINDSGeneralData *, const int &) override;
 };

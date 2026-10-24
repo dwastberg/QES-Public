@@ -58,6 +58,14 @@
  * @sa GlobalMemory
  * @sa SharedMemory
  */
+struct SolveDiagnostics
+{
+  int iterations;
+  float max_lagrange_multiplier_change;
+  float tolerance;
+  bool converged;
+};
+
 class Solver
 {
 private:
@@ -79,6 +87,8 @@ protected:
   const float A; /**< :document this: */
   const float B; /**< :document this: */
 
+  void validateSolve(const WINDSGeneralData *, int) const;
+
   float tol; /**< Error tolerance */
   const float omega = 1.78f; /**< Over-relaxation factor */
 
@@ -96,10 +106,11 @@ protected:
    *
    * @param percentage the amount the task has finished
    */
-  void printProgress(float percentage);
+
 
 
 public:
+  virtual ~Solver() = default;
   void resetLambda();
   void copyLambda();
 
@@ -109,7 +120,7 @@ public:
    * @param WGD :document this:
    * @param itermax Maximum number of iterations
    */
-  virtual void solve(WINDSGeneralData *, const int &) = 0;
+  virtual SolveDiagnostics solve(WINDSGeneralData *, const int &) = 0;
 };
 
 inline void Solver::resetLambda()
