@@ -1,4 +1,6 @@
 
+
+#include "util/QESLog.h"
 #include "calcTime.h"
 
 /***** public functions *****/
@@ -28,16 +30,14 @@ void calcTime::startNewTimer(const std::string &newTimerName)
     storedTimers[newTimerName] = std::chrono::high_resolution_clock::now();
   } else {
     //timer found
-    std::cerr << "ERROR (calcTime::startNewTimer): Invalid newTimerName! newTimerName \"" << newTimerName
-              << "\" already exists so can't start a new time with the same name! Exiting Program!" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ERROR (calcTime::startNewTimer): Invalid newTimerName! newTimerName \"" << newTimerName
+              << "\" already exists so can't start a new time with the same name! Exiting Program!" << std::endl; throw qes::InputError(message.str()); }
   }
 
   /*
   if (isTimerStored(newTimerName) == true) {
-    std::cerr << "ERROR (calcTime::startNewTimer): Invalid newTimerName! newTimerName \"" << newTimerName
-              << "\" already exists so can't start a new time with the same name! Exiting Program!" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ERROR (calcTime::startNewTimer): Invalid newTimerName! newTimerName \"" << newTimerName
+              << "\" already exists so can't start a new time with the same name! Exiting Program!" << std::endl; throw qes::InputError(message.str()); }
   }
   storedTimerNames.push_back(newTimerName);
   storedStartTimes.push_back(std::chrono::high_resolution_clock::now());// start recording execution time
@@ -127,9 +127,8 @@ size_t calcTime::findTimerIdx(const std::string &timerName)
   }
 
   if (foundTimerName == false) {
-    std::cerr << "ERROR (calcTime::findTimerIdx): Invalid timerName! timeName \""
-              << timerName << "\" does not exist in calcTime storage! Exiting Program!" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ERROR (calcTime::findTimerIdx): Invalid timerName! timeName \""
+              << timerName << "\" does not exist in calcTime storage! Exiting Program!" << std::endl; throw qes::InputError(message.str()); }
   }
 
   return foundTimerIdx;
@@ -160,16 +159,16 @@ void calcTime::printTime(const std::string &timerName,
                          const int &hours,
                          const int &days)
 {
-  std::cout << "  Elapsed time for \"" << timerName << "\" timer: ";
+  qes::log::info() << "  Elapsed time for \"" << timerName << "\" timer: ";
   if (days != 0) {
-    std::cout << days << " days, ";
+    qes::log::info() << days << " days, ";
   }
   if (hours != 0) {
-    std::cout << hours << " hours, ";
+    qes::log::info() << hours << " hours, ";
   }
   if (minutes != 0) {
-    std::cout << minutes << " minutes, ";
+    qes::log::info() << minutes << " minutes, ";
   }
-  std::cout << seconds << " seconds, " << milliseconds << " milliseconds" << std::endl;
+  qes::log::info() << seconds << " seconds, " << milliseconds << " milliseconds" << std::endl;
 }
 /*** end utility functions ***/

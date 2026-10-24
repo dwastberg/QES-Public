@@ -30,6 +30,8 @@
 
 /** @file CanopyIsolatedTree.cpp */
 
+
+#include "util/QESLog.h"
 #include "CanopyIsolatedTree.h"
 
 #include "WINDSInputData.h"
@@ -155,13 +157,11 @@ void CanopyIsolatedTree::setCellFlags(const WINDSInputData *WID, WINDSGeneralDat
   }
 
   if (k_start > k_end) {
-    std::cerr << "ERROR in tree definition (k_start > k end)" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR in tree definition (k_start > k end)" << std::endl; throw qes::InputError(message.str()); }
   }
 
   if (ceil(1.5 * k_end) > nz - 1) {
-    std::cerr << "ERROR domain too short for tree method" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR domain too short for tree method" << std::endl; throw qes::InputError(message.str()); }
   }
 
   return;
@@ -192,19 +192,19 @@ void CanopyIsolatedTree::canopyVegetation(WINDSGeneralData *WGD, int tree_id)
                                                         WGD->canopy->canopy_atten_coeff[icell_3d],
                                                         WGD->vk,
                                                         0.0);
-      // std::cout << "WGD->vk:" << WGD->vk << "\n";
-      // std::cout << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
+      // qes::log::info() << "WGD->vk:" << WGD->vk << "\n";
+      // qes::log::info() << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
       if (WGD->canopy->canopy_d[icell_2d] == 10000) {
-        std::cout << "bisection failed to converge"
+        qes::log::info() << "bisection failed to converge"
                   << "\n";
-        std::cout << "TREE1 " << tree_id << " " << H << " " << base_height << std::endl;
+        qes::log::info() << "TREE1 " << tree_id << " " << H << " " << base_height << std::endl;
 
         WGD->canopy->canopy_d[icell_2d] = canopySlopeMatch(WGD->canopy->canopy_z0[icell_2d],
                                                            WGD->canopy->canopy_height[icell_2d],
                                                            WGD->canopy->canopy_atten_coeff[icell_3d]);
       }
 
-      // std::cout << building_id << " "  << canopy_ustar[icell_2d] << " "  << canopy_d[icell_2d] << " "  << canopy_z0[icell_2d] << std::endl;
+      // qes::log::info() << building_id << " "  << canopy_ustar[icell_2d] << " "  << canopy_d[icell_2d] << " "  << canopy_z0[icell_2d] << std::endl;
 
       /**< velocity at the height of the canopy */
       // Local variable - not being used by agrid.nything... so
@@ -359,7 +359,7 @@ void CanopyIsolatedTree::canopyWake(WINDSGeneralData *WGD, int tree_id)
   if (WGD->icellflag[icell_cent] == 3 || WGD->icellflag[icell_cent] == 4 || WGD->icellflag[icell_cent] == 6)
     return;
 
-  // std::cout << "TREE " << building_id << " " << k_end << " " << k_top << " " << kk << std::endl;
+  // qes::log::info() << "TREE " << building_id << " " << k_end << " " << k_top << " " << kk << std::endl;
 
   // mathod 1 -> location of upsteam data point (5% of 1/2 building length)
   // method 2 -> displaced log profile
@@ -401,9 +401,9 @@ void CanopyIsolatedTree::canopyWake(WINDSGeneralData *WGD, int tree_id)
     ustar_us = mag_us * WGD->vk / (log((z_c + WGD->canopy->canopy_d[icell_2d]) / WGD->canopy->canopy_z0[icell_2d]));
     ustar_wake = ustar_us / mag_us;
 
-    // std::cout << "TREE2 " << building_id << " " << H+base_height << " " << k_top << std::endl;
-    // std::cout << z_c << " " << mag_us << " " << ustar_wake << std::endl;
-    // std::cout << canopy_d[icell_2d] << " " << canopy_z0[icell_2d] << std::endl;
+    // qes::log::info() << "TREE2 " << building_id << " " << H+base_height << " " << k_top << std::endl;
+    // qes::log::info() << z_c << " " << mag_us << " " << ustar_wake << std::endl;
+    // qes::log::info() << canopy_d[icell_2d] << " " << canopy_z0[icell_2d] << std::endl;
   } else {
     ustar_wake = 0.323 / 6.15;
   }
@@ -567,7 +567,7 @@ void CanopyIsolatedTree::canopyWake(WINDSGeneralData *WGD, int tree_id)
                 if (u_defect > WGD->canopy->wake_u_defect[icell_face])
                   WGD->canopy->wake_u_defect[icell_face] = u_defect;
 
-                // std::cout << r_center << " " << delta << " " << ustar_wake << " " << u_c << std::endl;
+                // qes::log::info() << r_center << " " << delta << " " << ustar_wake << " " << u_c << std::endl;
                 //  apply parametrization
                 // if (std::abs(WGD->u0[icell_face]) >= std::abs(0.2 * cos(upwind_dir) * mag_us)) {
                 //  u0_mod_id.push_back(icell_face);

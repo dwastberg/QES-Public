@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <cmath>
 #include "util/ParseInterface.h"
 #include "Canopy.h"
@@ -14,7 +16,7 @@ public:
   // LDU: this gets run first, when the XML is parsed. So polygonVertices are always the rotated ones, wherever they're used downstream. However, the wake rotation seems to be done inside the paramterization.
   virtual void parseValues()
   {
-    // std::cout << "PARSING VINEYARD PARAMETERS" << std::endl;
+    // qes::log::info() << "PARSING VINEYARD PARAMETERS" << std::endl;
     base_height = 0.0;
 
     std::vector<float> xVertex, yVertex;

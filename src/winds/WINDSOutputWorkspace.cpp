@@ -34,12 +34,14 @@
  * face center data (used for turbulence,...)
  */
 
+
+#include "util/QESLog.h"
 #include "WINDSOutputWorkspace.h"
 
 WINDSOutputWorkspace::WINDSOutputWorkspace(WINDSGeneralData *WGD, const std::string &output_file)
   : QESNetCDFOutput(output_file)
 {
-  std::cout << "[QES-WINDS] \t Setting fields of workspace file" << std::endl;
+  qes::log::info() << "[QES-WINDS] \t Setting fields of workspace file" << std::endl;
 
   // copy of WGD pointer
   m_WGD = WGD;
@@ -86,7 +88,7 @@ WINDSOutputWorkspace::WINDSOutputWorkspace(WINDSGeneralData *WGD, const std::str
   }
 
   m_utmx = m_WGD->UTMx;
-  std::cout << "m_utmx:   " << m_utmx << std::endl;
+  qes::log::info() << "m_utmx:   " << m_utmx << std::endl;
 
   // set UTM dimensions
   NcDim NcDim_utm_x = addDimension("UTMx", 1);

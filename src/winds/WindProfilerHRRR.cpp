@@ -37,6 +37,8 @@
  * @sa TimeSeries
  */
 
+
+#include "util/QESLog.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -141,7 +143,7 @@ void WindProfilerHRRR::interpolateWindProfile(const WINDSInputData *WID, WINDSGe
     }
     auto finish_nearest = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = finish_nearest - start_nearest;
-    std::cout << "Elapsed time for No Interpolation: " << elapsed.count() << " s\n";
+    qes::log::info() << "Elapsed time for No Interpolation: " << elapsed.count() << " s\n";
   }
 
   int count;
@@ -205,7 +207,7 @@ void WindProfilerHRRR::interpolateWindProfile(const WINDSInputData *WID, WINDSGe
     }
     auto finish_biLinear = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = finish_biLinear - start_biLinear;
-    std::cout << "Elapsed time for Bilinear Interpolation: " << elapsed.count() << " s\n";
+    qes::log::info() << "Elapsed time for Bilinear Interpolation: " << elapsed.count() << " s\n";
   }
 
   return;
@@ -218,7 +220,7 @@ void WindProfilerHRRR::biLinearInterpolation(const WINDSInputData *WID, WINDSGen
   auto [dx, dy, dz] = WGD->domain.getDomainSize();
 
   if (WGD->closest_site_ids[id].size() != 4) {
-    std::cout << "Not enough HRRR sites" << std::endl;
+    qes::log::info() << "Not enough HRRR sites" << std::endl;
     return;
   }
 

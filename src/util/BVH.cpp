@@ -37,6 +37,8 @@
  * @sa Triangle
  */
 
+
+#include "util/QESLog.h"
 #include "BVH.h"
 
 /**
@@ -255,7 +257,7 @@ bool BVH::rayHit(const Ray &ray, HitRecord &rec)
   if (isLeaf) {
 
     // if(!tri){
-    // std::cout<<"Must not be a tri."<<std::endl;  // this is an error!
+    // qes::log::info()<<"Must not be a tri."<<std::endl;  // this is an error!
     //  }
 
     float t0 = 0.00001;
@@ -279,7 +281,7 @@ bool BVH::rayHit(const Ray &ray, HitRecord &rec)
       rightHit = rightBox->rayHit(ray, rrec);
     }
 
-    // std::cout << "Left Hit: " << leftHit << ", Right Hit: " << rightHit << std::endl;
+    // qes::log::info() << "Left Hit: " << leftHit << ", Right Hit: " << rightHit << std::endl;
 
     if (leftHit && rightHit) {
       if (lrec.hitDist < rrec.hitDist) {
@@ -295,7 +297,7 @@ bool BVH::rayHit(const Ray &ray, HitRecord &rec)
       rec = rrec;
       return true;
     } else {
-      // std::cout << "false only else case" << std::endl;
+      // qes::log::info() << "false only else case" << std::endl;
       return false;
     }
   }

@@ -30,6 +30,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 /*
  * This class represents a building that is a block with a length width height
  * and origin position. Rectangular buildigns may also have a rotation.
@@ -42,10 +44,9 @@
 #include <cmath>
 
 using namespace std;
-using std::cerr;
+
 using std::endl;
 using std::vector;
-using std::cout;
 
 class PolygonQUICBuilding : public PolyBuilding
 {

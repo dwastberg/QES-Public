@@ -34,6 +34,8 @@
  * @sa LocalMixing
  */
 
+
+#include "util/QESLog.h"
 #include "LocalMixingOptix.h"
 #include "util/QESFeatures.h"
 #include "util/UnsupportedFeature.h"
@@ -62,7 +64,7 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
 
   if (WGD->allBuildingsV.size() > 0) {
 
-    std::cout << "Preparing building geometry data for mixing length calculations." << std::endl;
+    qes::log::info() << "Preparing building geometry data for mixing length calculations." << std::endl;
 
     // for (auto bIdx = 0u; bIdx <
     // WID->buildings->buildings.size(); bIdx++)
@@ -191,7 +193,7 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
   }
 
   // Assemble list of all triangles and create the mesh BVH
-  std::cout << "Forming Length Scale triangle mesh...\n";
+  qes::log::info() << "Forming Length Scale triangle mesh...\n";
   std::vector<Triangle *> allTriangles;
   if (WID->simParams->DTE_heightField) {
 #if QES_ENABLE_IO
@@ -217,7 +219,7 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
   }
 
   Mesh *m_mixingLengthMesh = new Mesh(allTriangles);
-  std::cout << "Triangle Meshing complete\n";
+  qes::log::info() << "Triangle Meshing complete\n";
 
 
 #ifdef HAS_OPTIX
@@ -226,17 +228,17 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
   //  mesh of triangles...
   // OptixRayTrace optixRayTracer(WID->simParams->DTE_mesh->getTris());
 
-  std::cout << "--------------------Before OptiX calls-------------------------" << std::endl;
+  qes::log::info() << "--------------------Before OptiX calls-------------------------" << std::endl;
   OptixRayTrace optixRayTracer(m_mixingLengthMesh->getTris());
   optixRayTracer.calculateMixingLength(WID->turbParams->mlSamplesPerAirCell, nx, ny, nz, dx, dy, dz, WGD->icellflag, WGD->mixingLengths);
 
-  std::cout << "--------------------End of OptiX calls-------------------------" << std::endl;
+  qes::log::info() << "--------------------End of OptiX calls-------------------------" << std::endl;
 #else
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << "NO OPTIX SUPPORT!!!!!!!!!!!!!!!!!!!!" << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
+  qes::log::info() << std::endl;
+  qes::log::info() << std::endl;
+  qes::log::info() << "NO OPTIX SUPPORT!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  qes::log::info() << std::endl;
+  qes::log::info() << std::endl;
 #endif
 
   if (WID->turbParams->save2file) {

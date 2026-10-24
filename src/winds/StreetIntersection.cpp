@@ -30,6 +30,8 @@
 
 /** @file StreetIntersection */
 
+
+#include "util/QESLog.h"
 #include "PolyBuilding.h"
 
 // These take care of the circular reference
@@ -80,26 +82,26 @@
         {
           change_flag = 1;
           i_start_flag = i;
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         }
         if ((change_flag == 1 && WGD->icellflag[icell_cent] == 6) || (change_flag == 1 && (WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2))
             || (change_flag == 1 && WGD->icellflag[icell_cent] == 1))
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           change_flag = 0;
         }
         intersect_1[icell_cent] = change_flag;
       }
 
-      //std::cout << "i_start_flag:  " << i_start_flag << std::endl;
+      //qes::log::info() << "i_start_flag:  " << i_start_flag << std::endl;
       if (change_flag == 1)
       {
-        //std::cout <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
-        //std::cout << "i_start_flag:  " << i_start_flag << std::endl;
+        //qes::log::info() <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+        //qes::log::info() << "i_start_flag:  " << i_start_flag << std::endl;
         for (auto i = i_start_flag; i < WGD->nx-1; i++)
         {
           icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           intersect_1[icell_cent] = 0;
         }
       }
@@ -115,8 +117,8 @@
         {
           change_flag = 1;
           i_start_flag = i;
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
-          //std::cout << "i_start_flag:  " << i_start_flag << std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i_start_flag:  " << i_start_flag << std::endl;
         }
 
         if ((change_flag == 1 && WGD->icellflag[icell_cent] == 6) || (change_flag == 1 && (WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2))
@@ -129,7 +131,7 @@
 
       if (change_flag == 1)
       {
-        //std::cout <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+        //qes::log::info() <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         for (auto i = WGD->nx-2; i >= i_start_flag; i--)
         {
           icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
@@ -139,8 +141,8 @@
       change_flag = 0;
     }
   }
-  //std::cout << "WGD->icellflag:  " << WGD->icellflag[90+75*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
-  //std::cout << "WGD->icellflag-1:  " << WGD->icellflag[90+74*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
+  //qes::log::info() << "WGD->icellflag:  " << WGD->icellflag[90+75*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
+  //qes::log::info() << "WGD->icellflag-1:  " << WGD->icellflag[90+74*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
   change_flag = 0;
   for (auto k = 0; k < WGD->nz-1; k++)
   {
@@ -153,21 +155,21 @@
         {
           change_flag = 1;
           j_start_flag = j;
-          //std::cout << "j_start_flag:  " << j_start_flag << std::endl;
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "j_start_flag:  " << j_start_flag << std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         }
-        //std::cout << "j_start_flag:  " << j_start_flag << std::endl;
+        //qes::log::info() << "j_start_flag:  " << j_start_flag << std::endl;
         if ((change_flag == 1 && WGD->icellflag[icell_cent] == 6) || (change_flag == 1 && (WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2))
             || (change_flag == 1 && WGD->icellflag[icell_cent] == 1))
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           change_flag = 0;
         }
         intersect_2[icell_cent] = change_flag;
       }
       if (change_flag == 1)
       {
-        //std::cout <<"i:  "<< i << "\t\t" << "k:  " << k <<std::endl;
+        //qes::log::info() <<"i:  "<< i << "\t\t" << "k:  " << k <<std::endl;
         for (auto j = j_start_flag; j < WGD->ny-1; j++)
         {
           icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
@@ -180,14 +182,14 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if (WGD->icellflag[icell_cent+(WGD->nx-1)] == 6 && WGD->icellflag[icell_cent] != 6 && WGD->icellflag[icell_cent] != 0 && WGD->icellflag[icell_cent] != 2)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           change_flag = 1;
           j_start_flag = j;
         }
         if ((change_flag == 1 && WGD->icellflag[icell_cent] == 6) || (change_flag == 1 && (WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2))
             || (change_flag == 1 && WGD->icellflag[icell_cent] == 1))
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           change_flag = 0;
         }
         intersect_2opp[icell_cent] = change_flag;
@@ -205,7 +207,7 @@
     }
   }
 
-  //std::cout << "intersect_2:  " << intersect_2[90+75*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
+  //qes::log::info() << "intersect_2:  " << intersect_2[90+75*(WGD->nx-1)+1*(WGD->nx-1)*(WGD->ny-1)] << std::endl;
 
 
   for (auto k = 0; k < WGD->nz-1; k++)
@@ -217,7 +219,7 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if ((intersect_1[icell_cent] == 1 || intersect_1opp[icell_cent] == 1) && (intersect_2[icell_cent] == 1 || intersect_2opp[icell_cent] == 1))
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           intersect[icell_cent] = 1;
         }
       }
@@ -234,17 +236,17 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if (intersect[icell_cent] == 1 && WGD->icellflag[icell_cent-1] == 6)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 1;
         }
         if (intersect[icell_cent] != 1 && NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 0;
         }
         if (NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           E_W_flag[icell_cent] = 1;
         }
       }
@@ -254,17 +256,17 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if (intersect[icell_cent] == 1 && WGD->icellflag[icell_cent+1] == 6)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 1;
         }
         if (intersect[icell_cent] != 1 && NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 0;
         }
         if (NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           W_E_flag[icell_cent] = 1;
         }
       }
@@ -279,22 +281,22 @@
       NS_flag = 0;
       for (auto j = 1; j < WGD->ny-1; j++)
       {
-        //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+        //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if (intersect[icell_cent] == 1 && WGD->icellflag[icell_cent-(WGD->nx-1)] == 6)
         {
           NS_flag = 1;
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         }
         if (intersect[icell_cent] != 1 && NS_flag == 1)
         {
           NS_flag = 0;
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
         }
-        //std::cout << "NS_flag:  " << NS_flag << std::endl;
+        //qes::log::info() << "NS_flag:  " << NS_flag << std::endl;
         if (NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           S_N_flag[icell_cent] = 1;
         }
       }
@@ -304,17 +306,17 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if (intersect[icell_cent] == 1 && WGD->icellflag[icell_cent+(WGD->nx-1)] == 6)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 1;
         }
         if (intersect[icell_cent] != 1 && NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           NS_flag = 0;
         }
         if (NS_flag == 1)
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           N_S_flag[icell_cent] = 1;
         }
       }
@@ -330,7 +332,7 @@
         icell_cent = i + j*(WGD->nx-1) + k*(WGD->nx-1)*(WGD->ny-1);
         if ((E_W_flag[icell_cent] == 1 || S_N_flag[icell_cent] == 1) && (N_S_flag[icell_cent] == 1 || W_E_flag[icell_cent] == 1))
         {
-          //std::cout << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
+          //qes::log::info() << "i:  "<< i << "\t\t" <<"j:  "<< j << "\t\t" << "k:  " << k <<std::endl;
           WGD->icellflag[icell_cent] = 12;
         }
       }
@@ -371,7 +373,7 @@
                   WGD->g[icell_cent] * WGD->u0[icell_face + WGD->nx] + WGD->h[icell_cent] * WGD->u0[icell_face-WGD->nx] +
                   WGD->m[icell_cent] * WGD->u0[icell_face + WGD->nx*WGD->ny] +
                   WGD->n[icell_cent] * WGD->u0[icell_face - WGD->nx*WGD->ny] );
-                  //std::cout << "u0:  " << WGD->u0[icell_face] << std::endl;
+                  //qes::log::info() << "u0:  " << WGD->u0[icell_face] << std::endl;
           }
 
           if (WGD->icellflag[icell_cent] == 12 && WGD->icellflag[icell_cent-(WGD->nx-1)] == 12)
@@ -382,7 +384,7 @@
                   WGD->g[icell_cent] * WGD->v0[icell_face + WGD->nx] + WGD->h[icell_cent] * WGD->v0[icell_face-WGD->nx] +
                   WGD->m[icell_cent] * WGD->v0[icell_face + WGD->nx*WGD->ny] +
                   WGD->n[icell_cent] * WGD->v0[icell_face - WGD->nx*WGD->ny] );
-                  //std::cout << "v0:  " << WGD->v0[icell_face] << std::endl;
+                  //qes::log::info() << "v0:  " << WGD->v0[icell_face] << std::endl;
           }
 
           if (WGD->icellflag[icell_cent] == 12 && WGD->icellflag[icell_cent-(WGD->nx-1)*(WGD->ny-1)] == 12)

@@ -30,6 +30,8 @@
 
 /** StreetCanyon.cpp */
 
+
+#include "util/QESLog.h"
 #include "PolyBuilding.h"
 
 // These take care of the circular reference
@@ -294,7 +296,7 @@ void PolyBuilding::streetCanyon(WINDSGeneralData *WGD)
                 int jc = ceil(((xc - 0.5 * dxy + x_wall) * sin(upwind_dir) + yc * cos(upwind_dir) + building_cent_y - 0.001) / dy) - 1;
 
                 if (WGD->ibuilding_flag[WGD->domain.cell(ic, jc, k)] >= 0) {
-                  // std::cout << "error" << std::endl;
+                  // qes::log::info() << "error" << std::endl;
                   continue;
                 }
 

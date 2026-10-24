@@ -29,6 +29,8 @@
  ****************************************************************************/
 
 
+
+#include "util/QESLog.h"
 #include "WINDSInputData.h"
 #include "DTEHeightField.h"
 #include "WRFInput.h"
@@ -44,8 +46,7 @@ void SimulationParameters::parseValues()
       if (domain_in->size() == 3) {
         domain = { (*domain_in)[0], (*domain_in)[1], (*domain_in)[2] };
       } else {
-        std::cerr << "[ERROR] unvalid number of argument for domain parameter" << std::endl;
-        exit(EXIT_FAILURE);
+        { std::ostringstream message; message << "[ERROR] unvalid number of argument for domain parameter" << std::endl; throw qes::InputError(message.str()); }
       }
     }
     ParseVector<float> *grid_in;
@@ -54,8 +55,7 @@ void SimulationParameters::parseValues()
       if (grid_in->size() == 3) {
         grid = { (*grid_in)[0], (*grid_in)[1], (*grid_in)[2] };
       } else {
-        std::cerr << "[ERROR] unvalid number of argument for cellSize parameter" << std::endl;
-        exit(EXIT_FAILURE);
+        { std::ostringstream message; message << "[ERROR] unvalid number of argument for cellSize parameter" << std::endl; throw qes::InputError(message.str()); }
       }
     }
     parsePrimitive<int>(false, verticalStretching, "verticalStretching");
@@ -133,9 +133,9 @@ void SimulationParameters::parseValues()
       // We extract the dimensions of the fire (or atm) mesh for
       // nx and ny domain cells.
       //
-      std::cout << "Processing WRF data for terrain and met param sensors from " << wrfFile << std::endl;
+      qes::log::info() << "Processing WRF data for terrain and met param sensors from " << wrfFile << std::endl;
       wrfInputData = new WRFInput(wrfFile, UTMx, UTMy, UTMZone, UTMZoneLetter, 0, 0, wrfCoupling, wrfSensorSample);
-      std::cout << "WRF input data processing completed." << std::endl;
+      qes::log::info() << "WRF input data processing completed." << std::endl;
 
       // Apply halo to wind profile locations -- halo units are
       // meters so can add to other coordinates/positions, such
@@ -160,7 +160,7 @@ void SimulationParameters::parseValues()
       grid[1] = wrfInputData->fm_dy;
       grid[2] = wrfInputData->fm_dz;
 
-      std::cout << "Dim: " << wrfInputData->fm_nx << " X " << wrfInputData->fm_ny << " X " << wrfInputData->fm_nz
+      qes::log::info() << "Dim: " << wrfInputData->fm_nx << " X " << wrfInputData->fm_ny << " X " << wrfInputData->fm_nz
                 << " at " << grid[0] << " X " << grid[1] << " X " << grid[2] << std::endl;
 
       domain = { wrfInputData->fm_nx, wrfInputData->fm_ny, wrfInputData->fm_nz };
@@ -170,7 +170,7 @@ void SimulationParameters::parseValues()
       int halo_x_WRFAddition = (int)floor(halo_x / wrfInputData->fm_dx);
       int halo_y_WRFAddition = (int)floor(halo_y / wrfInputData->fm_dy);
 
-      std::cout << "Halo Addition to dimensions: " << halo_x_WRFAddition << " cells, " << halo_y_WRFAddition << " cells" << std::endl;
+      qes::log::info() << "Halo Addition to dimensions: " << halo_x_WRFAddition << " cells, " << halo_y_WRFAddition << " cells" << std::endl;
 
       domain[0] += 2 * halo_x_WRFAddition;
       domain[1] += 2 * halo_y_WRFAddition;
@@ -178,17 +178,17 @@ void SimulationParameters::parseValues()
       // let WRF class know about the dimensions that the halo adds...
       wrfInputData->setHaloAdditions(halo_x_WRFAddition, halo_y_WRFAddition);
 
-      std::cout << "domain size with halo borders: " << domain[0] << " x " << domain[1] << std::endl;
+      qes::log::info() << "domain size with halo borders: " << domain[0] << " x " << domain[1] << std::endl;
 
       DTE_mesh = new Mesh(DTE_heightField->getTris());
-      std::cout << "Meshing of DEM complete\n";
+      qes::log::info() << "Meshing of DEM complete\n";
     } else if (m_domIType == WRFDEM) {
 
-      std::cout << "Reading DEM and processing WRF data for met param sensors from " << wrfFile << std::endl;
+      qes::log::info() << "Reading DEM and processing WRF data for met param sensors from " << wrfFile << std::endl;
 
       // First read DEM as usual
-      std::cout << "Domain: " << domain[0] << ", " << domain[1] << ", " << domain[2] << std::endl;
-      std::cout << "Grid: " << grid[0] << ", " << grid[1] << ", " << grid[2] << std::endl;
+      qes::log::info() << "Domain: " << domain[0] << ", " << domain[1] << ", " << domain[2] << std::endl;
+      qes::log::info() << "Grid: " << grid[0] << ", " << grid[1] << ", " << grid[2] << std::endl;
       // Extracting Digital Elevation Data from: demFile
       DTE_heightField = new DTEHeightField(demFile,
                                            std::tuple<int, int, int>(domain[0], domain[1], domain[2]),
@@ -200,10 +200,10 @@ void SimulationParameters::parseValues()
                                            DEMDistancey);
       assert(DTE_heightField);
 
-      std::cout << "Forming triangle mesh...\n";
+      qes::log::info() << "Forming triangle mesh...\n";
       DTE_heightField->setDomain(domain, grid);
       DTE_mesh = new Mesh(DTE_heightField->getTris());
-      std::cout << "Mesh complete\n";
+      qes::log::info() << "Mesh complete\n";
 
       // To proceed and cull sensors appropriately, we will need
       // the lower-left bounds from the DEM if UTMx and UTMy and
@@ -218,7 +218,7 @@ void SimulationParameters::parseValues()
         useUTM_for_DEMLocation = true;
       }
       if (useUTM_for_DEMLocation) {
-        std::cout << "UTM (" << UTMx << ", " << UTMy << "), Zone: " << UTMZone << " will be used as lower-left location for DEM." << std::endl;
+        qes::log::info() << "UTM (" << UTMx << ", " << UTMy << "), Zone: " << UTMZone << " will be used as lower-left location for DEM." << std::endl;
       }
 
       // Note from Pete:
@@ -232,9 +232,9 @@ void SimulationParameters::parseValues()
       bool onlySensorData = true;
       float dimX = domain[0] * grid[0];
       float dimY = domain[1] * grid[1];
-      std::cout << "dimX = " << dimX << ", dimY = " << dimY << std::endl;
+      qes::log::info() << "dimX = " << dimX << ", dimY = " << dimY << std::endl;
       wrfInputData = new WRFInput(wrfFile, UTMx, UTMy, UTMZone, UTMZoneLetter, dimX, dimY, wrfSensorSample, wrfCoupling, onlySensorData);
-      std::cout << "WRF Wind Velocity Profile Data processing completed." << std::endl;
+      qes::log::info() << "WRF Wind Velocity Profile Data processing completed." << std::endl;
     }
 
     else if (m_domIType == DEMOnly) {
@@ -255,7 +255,7 @@ void SimulationParameters::parseValues()
 
       // for (auto it = DTE_mesh->optixTris.begin(); it != DTE_mesh->optixTris.end(); ++it) {
       //   if ((*it)->n[2] < 0)
-      //     std::cerr << "[WARNING] triangle definition " << (*it)->n << std::endl;
+      //     qes::log::warning() << "[WARNING] triangle definition " << (*it)->n << std::endl;
       // }
 
     } else {
@@ -305,7 +305,7 @@ void BuildingsParams::parseValues()
       // Read polygon node coordinates and building height from shapefile
       // SHPData = new ESRIShapefile(shpFile, shpTreeLayerName, shpPolygons, shpFeatures);
       SHPData = new ESRIShapefile(shpFile, shpBuildingLayerName);
-      // std::cout << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
+      // qes::log::info() << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
     }
   }
 
@@ -337,7 +337,7 @@ void VegetationParams::parseValues()
       // Read polygon node coordinates and building height from shapefile
       // SHPData = new ESRIShapefile(shpFile, shpTreeLayerName, shpPolygons, shpFeatures);
       SHPData = new ESRIShapefile(shpFile, shpTreeLayerName);
-      // std::cout << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
+      // qes::log::info() << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
     }
   }
 
@@ -387,7 +387,7 @@ void TURBParams::parseValues()
     }
     parsePrimitive<int>(false, mlSamplesPerAirCell, "samples");
     if (methodLocalMixing == 3) {
-      std::cout << "Setting samples per air cell for ray-traced mixing length to "
+      qes::log::info() << "Setting samples per air cell for ray-traced mixing length to "
                 << mlSamplesPerAirCell << std::endl;
     }
 #else
@@ -425,7 +425,7 @@ void TURBParams::parseValues()
       if (sig_in->size() == 3) {
         sigConst = new Vector3Float((*(sig_in))[0], (*(sig_in))[1], (*(sig_in))[2]);
       } else {
-        exit(EXIT_FAILURE);
+        throw qes::InputError("sigmaConst must contain three values");
       }
     }
   }

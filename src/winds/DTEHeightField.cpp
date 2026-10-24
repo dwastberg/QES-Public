@@ -38,6 +38,8 @@
  * @sa Vector3Float
  */
 
+
+#include "util/QESLog.h"
 #include "DTEHeightField.h"
 #include "WINDSInputData.h"
 #include "WINDSGeneralData.h"
@@ -65,9 +67,9 @@ DTEHeightField::DTEHeightField(const std::string &filename,
     m_cellSize(cellSize), m_dim(dim),
     domain_UTMx(UTMx), domain_UTMy(UTMy)
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[DTEHeightField] Initialization Height Field..." << std::endl;
-  std::cout << "Extracting Digital Elevation Data from" << filename << std::endl;
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[DTEHeightField] Initialization Height Field..." << std::endl;
+  qes::log::info() << "Extracting Digital Elevation Data from" << filename << std::endl;
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -75,11 +77,11 @@ DTEHeightField::DTEHeightField(const std::string &filename,
 
   load();
 
-  std::cout << "[DTEHeightField] Loading completed." << std::endl;
+  qes::log::info() << "[DTEHeightField] Loading completed." << std::endl;
 
   auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsed_cut = finish - start;
-  std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
 }
 
 // Constructor for converting heightfield data to the internal
@@ -93,8 +95,8 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
                                float halo_y)
   : m_cellSize(cellSize), m_dim(dim)
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[DTEHeightField]  Constructing the DTE from WRF input height-field..." << std::endl;
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[DTEHeightField]  Constructing the DTE from WRF input height-field..." << std::endl;
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -115,12 +117,12 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
   float dy = std::get<1>(m_cellSize);
   float dz = std::get<2>(m_cellSize);
 
-  std::cout << "Loading digital elevation data from height field\n";
+  qes::log::info() << "Loading digital elevation data from height field\n";
 
-  std::cout << "dimX = " << nx << ", dimY = " << ny << ", dimZ = " << nz << std::endl;
-  std::cout << "cellSizes = (" << dx << ", " << dy << ", " << dz << ")" << std::endl;
+  qes::log::info() << "dimX = " << nx << ", dimY = " << ny << ", dimZ = " << nz << std::endl;
+  qes::log::info() << "cellSizes = (" << dx << ", " << dy << ", " << dz << ")" << std::endl;
 
-  std::cout << "size of heightField = " << heightField.size() << std::endl;
+  qes::log::info() << "size of heightField = " << heightField.size() << std::endl;
 
   // eventually need the fm_dx and fm_dy so we can multiply into
   // correct dimensions
@@ -136,7 +138,7 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
   // array... may not be in the domain space... hence when queried
   // later in the
 
-  std::cout << "Adding halo to surrounding regions..." << halo_x << ", " << halo_y << std::endl;
+  qes::log::info() << "Adding halo to surrounding regions..." << halo_x << ", " << halo_y << std::endl;
 
   for (float j = 0; j < ny - 1; j += step) {
     for (float i = 0; i < nx - 1; i += step) {
@@ -159,7 +161,7 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
 
       idx = j * nx + (i + step);
       if (idx > heightField.size() - 1) {
-        std::cout << "***************" << std::endl;
+        qes::log::info() << "***************" << std::endl;
         idx = heightField.size() - 1;
       }
 
@@ -168,7 +170,7 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
 
       idx = (j + step) * nx + i;
       if (idx > heightField.size() - 1) {
-        std::cout << "---------------" << std::endl;
+        qes::log::info() << "---------------" << std::endl;
         idx = heightField.size() - 1;
       }
 
@@ -205,11 +207,11 @@ DTEHeightField::DTEHeightField(const std::vector<double> &heightField,
 
   // At end of loop above, all height field data will have been
   // converted to a triangle mesh, stored in m_triList.
-  std::cout << "[DTEHeightField]  Loading completed." << std::endl;
+  qes::log::info() << "[DTEHeightField]  Loading completed." << std::endl;
 
   auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsed_cut = finish - start;
-  std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
 }
 
 #if 0
@@ -218,47 +220,46 @@ void DTEHeightField::loadImage()
 
   std::string filename = "/scratch/dem.png";
 
-  std::cout << "loadImage: opening " << filename << std::endl;
+  qes::log::info() << "loadImage: opening " << filename << std::endl;
 
   // From -- http://www.gdal.org/gdal_tutorial.html
   m_imageDataset = (GDALDataset *) GDALOpen( filename.c_str(), GA_ReadOnly );
   if( m_imageDataset == NULL )
     {
-      std::cerr << "Couldn't open file: " << filename << std::endl;
-      exit( EXIT_FAILURE );
+      { std::ostringstream message; message << "Couldn't open file: " << filename << std::endl; throw qes::InputError(message.str()); }
     }
 
-  printf( "Driver: %s/%s\n",
+  qes::log::writef(qes::log::Level::info,  "Driver: %s/%s\n",
       m_imageDataset->GetDriver()->GetDescription(),
       m_imageDataset->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME ) );
 
-  printf( "Size is %dx%dx%d\n",
+  qes::log::writef(qes::log::Level::info,  "Size is %dx%dx%d\n",
       m_imageDataset->GetRasterXSize(), m_imageDataset->GetRasterYSize(),
       m_imageDataset->GetRasterCount() );
 
   if( m_imageDataset->GetProjectionRef()  != NULL )
-    printf( "Projection is `%s'\n", m_imageDataset->GetProjectionRef() );
+    qes::log::writef(qes::log::Level::info,  "Projection is `%s'\n", m_imageDataset->GetProjectionRef() );
 
   if( m_imageDataset->GetGeoTransform( m_imageGeoTransform ) == CE_None )
     {
-      printf( "Origin = (%.6f,%.6f)\n",
+      qes::log::writef(qes::log::Level::info,  "Origin = (%.6f,%.6f)\n",
           m_imageGeoTransform[0], m_imageGeoTransform[3] );
 
-      printf( "Pixel Size = (%.6f,%.6f)\n",
+      qes::log::writef(qes::log::Level::info,  "Pixel Size = (%.6f,%.6f)\n",
           m_imageGeoTransform[1], m_imageGeoTransform[5] );
     }
 
   m_imageXSize = m_imageDataset->GetRasterXSize();
   m_imageYSize = m_imageDataset->GetRasterYSize();
 
-  std::cout << "loadImage: image loaded." << std::endl;
+  qes::log::info() << "loadImage: image loaded." << std::endl;
 }
 #endif
 
 void DTEHeightField::load()
 {
-  std::cout << "Summary of GIS Info:" << std::endl;
-  std::cout << "----------------------------" << std::endl;
+  qes::log::info() << "Summary of GIS Info:" << std::endl;
+  qes::log::info() << "----------------------------" << std::endl;
   //
   // local variables to hold common variables related to the QES
   // domain
@@ -276,11 +277,10 @@ void DTEHeightField::load()
   // From -- http://www.gdal.org/gdal_tutorial.html
   m_poDataset = (GDALDataset *)GDALOpen(m_filename.c_str(), GA_ReadOnly);
   if (m_poDataset == NULL) {
-    std::cerr << "Couldn't open file: " << m_filename << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "Couldn't open file: " << m_filename << std::endl; throw qes::InputError(message.str()); }
   }
 
-  printf("- GDAL Driver:\t %s/%s\n",
+  qes::log::writef(qes::log::Level::info, "- GDAL Driver:\t %s/%s\n",
          m_poDataset->GetDriver()->GetDescription(),
          m_poDataset->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
 
@@ -290,25 +290,25 @@ void DTEHeightField::load()
   // spatialRef = m_poDataset->GetSpatialRef, but in pre-3.0 versions,
   // this comes from GetProjectionRef
   if (m_poDataset->GetProjectionRef() != NULL)
-    printf("- Projection:\t `%s'\n", m_poDataset->GetProjectionRef());
+    qes::log::writef(qes::log::Level::info, "- Projection:\t `%s'\n", m_poDataset->GetProjectionRef());
 
-  printf("- Raster Size:\t\t %dx%dx%d\n",
+  qes::log::writef(qes::log::Level::info, "- Raster Size:\t\t %dx%dx%d\n",
          m_poDataset->GetRasterXSize(),
          m_poDataset->GetRasterYSize(),
          m_poDataset->GetRasterCount());
 
   if (m_poDataset->GetGeoTransform(m_geoTransform) == CE_None) {
-    printf("- DEM Origin:\t\t (%.6f,%.6f)\n",
+    qes::log::writef(qes::log::Level::info, "- DEM Origin:\t\t (%.6f,%.6f)\n",
            m_geoTransform[0],
            m_geoTransform[3]);
 
-    printf("- Pixel Size:\t\t (%.6f,%.6f)\n",
+    qes::log::writef(qes::log::Level::info, "- Pixel Size:\t\t (%.6f,%.6f)\n",
            m_geoTransform[1],
            m_geoTransform[5]);
     pixelSizeX = abs(m_geoTransform[1]);
     pixelSizeY = abs(m_geoTransform[5]);
 
-    printf("- These should be zero for north up: (%.6f, %.6f)\n",
+    qes::log::writef(qes::log::Level::info, "- These should be zero for north up: (%.6f, %.6f)\n",
            m_geoTransform[2],
            m_geoTransform[4]);
   }
@@ -320,7 +320,7 @@ void DTEHeightField::load()
 
   poBand = m_poDataset->GetRasterBand(1);
   poBand->GetBlockSize(&nBlockXSize, &nBlockYSize);
-  printf("- Raster Block=%dx%d Type=%s, ColorInterp=%s\n",
+  qes::log::writef(qes::log::Level::info, "- Raster Block=%dx%d Type=%s, ColorInterp=%s\n",
          nBlockXSize,
          nBlockYSize,
          GDALGetDataTypeName(poBand->GetRasterDataType()),
@@ -331,24 +331,24 @@ void DTEHeightField::load()
   if (!(bGotMin && bGotMax))
     GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
 
-  printf("- Raster Min:\t\t %.3f\n", adfMinMax[0]);
-  printf("- Raster Max:\t\t %.3f\n", adfMinMax[1]);
+  qes::log::writef(qes::log::Level::info, "- Raster Min:\t\t %.3f\n", adfMinMax[0]);
+  qes::log::writef(qes::log::Level::info, "- Raster Max:\t\t %.3f\n", adfMinMax[1]);
 
   if (poBand->GetOverviewCount() > 0)
-    printf("- Band has %d overviews.\n", poBand->GetOverviewCount());
+    qes::log::writef(qes::log::Level::info, "- Band has %d overviews.\n", poBand->GetOverviewCount());
 
   if (poBand->GetColorTable() != NULL)
-    printf("- Band has a color table with %d entries.\n",
+    qes::log::writef(qes::log::Level::info, "- Band has a color table with %d entries.\n",
            poBand->GetColorTable()->GetColorEntryCount());
 
   m_rbScale = poBand->GetScale();
-  printf("- Band scale:\t\t %.4f\n", m_rbScale);
+  qes::log::writef(qes::log::Level::info, "- Band scale:\t\t %.4f\n", m_rbScale);
 
   m_rbOffset = poBand->GetOffset();
-  printf("- Band offset:\t\t %.4f\n", m_rbOffset);
+  qes::log::writef(qes::log::Level::info, "- Band offset:\t\t %.4f\n", m_rbOffset);
 
   m_rbNoData = poBand->GetNoDataValue();
-  printf("- Band 'NoData' value:\t %.4f\n", m_rbNoData);
+  qes::log::writef(qes::log::Level::info, "- Band 'NoData' value:\t %.4f\n", m_rbNoData);
 
   m_nXSize = poBand->GetXSize();
   m_nYSize = poBand->GetYSize();
@@ -356,10 +356,10 @@ void DTEHeightField::load()
   origin_x = m_geoTransform[0];
   origin_y = m_geoTransform[3] - pixelSizeY * m_nYSize;
 
-  printf("- DEM size:\t\t %dx%d\n", m_nXSize, m_nYSize);
-  printf("- DEM size:\t\t %.1fx%.1f\n", m_nXSize * pixelSizeX, m_nYSize * pixelSizeY);
+  qes::log::writef(qes::log::Level::info, "- DEM size:\t\t %dx%d\n", m_nXSize, m_nYSize);
+  qes::log::writef(qes::log::Level::info, "- DEM size:\t\t %.1fx%.1f\n", m_nXSize * pixelSizeX, m_nYSize * pixelSizeY);
 
-  printf("- Domain Origin:\t (%.6f,%.6f)\n", origin_x, origin_y);
+  qes::log::writef(qes::log::Level::info, "- Domain Origin:\t (%.6f,%.6f)\n", origin_x, origin_y);
 
   // UTMx will be correct, but need to subtract halo
   //      demMinX == UTMx - halo_x
@@ -371,19 +371,19 @@ void DTEHeightField::load()
   //
   // if (we have utm, override the transofmr[0] and [3] parts...
 
-  std::cout << "Mapping between raster coordinates and geo-referenced coordinates" << std::endl;
+  qes::log::info() << "Mapping between raster coordinates and geo-referenced coordinates" << std::endl;
   double xGeo(0.0), yGeo(0.0);
   convertRasterToGeo(0, 0, xGeo, yGeo);
-  printf("- Raster Coordinate (0, 0):\t(%12.7f, %12.7f)\n", xGeo, yGeo);
+  qes::log::writef(qes::log::Level::info, "- Raster Coordinate (0, 0):\t(%12.7f, %12.7f)\n", xGeo, yGeo);
 
   convertRasterToGeo(m_nXSize, 0, xGeo, yGeo);
-  printf("- Raster Coordinate (%d, 0):\t(%12.7f, %12.7f)\n", m_nXSize, xGeo, yGeo);
+  qes::log::writef(qes::log::Level::info, "- Raster Coordinate (%d, 0):\t(%12.7f, %12.7f)\n", m_nXSize, xGeo, yGeo);
 
   convertRasterToGeo(m_nXSize, m_nYSize, xGeo, yGeo);
-  printf("- Raster Coordinate (%d, %d):\t(%12.7f, %12.7f)\n", m_nXSize, m_nYSize, xGeo, yGeo);
+  qes::log::writef(qes::log::Level::info, "- Raster Coordinate (%d, %d):\t(%12.7f, %12.7f)\n", m_nXSize, m_nYSize, xGeo, yGeo);
 
   convertRasterToGeo(0, m_nYSize, xGeo, yGeo);
-  printf("- Raster Coordinate (0, %d):\t(%12.7f, %12.7f)\n", m_nYSize, xGeo, yGeo);
+  qes::log::writef(qes::log::Level::info, "- Raster Coordinate (0, %d):\t(%12.7f, %12.7f)\n", m_nYSize, xGeo, yGeo);
 
   if (originFlag == 0) {
     float domain_end_x = origin_x + DEMDistancex + nx * dx;
@@ -435,8 +435,7 @@ void DTEHeightField::load()
   // CPLErr - CE_Failure if the access fails, otherwise CE_None.
   CPLErr rasterErr = poBand->RasterIO(GF_Read, shift_x, end_y, m_nXSize, m_nYSize, pafScanline, m_nXSize, m_nYSize, GDT_Float32, 0, 0);
   if (rasterErr == CE_Failure) {
-    std::cerr << "CPL RasterIO failure during DEM loading. Exiting." << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "CPL RasterIO failure during DEM loading. Exiting." << std::endl; throw qes::InputError(message.str()); }
   }
 
 
@@ -446,8 +445,8 @@ void DTEHeightField::load()
   // double xGeo, yGeo;
   Vector3Float tc0, tc1, tc2;
 
-  std::cout << "----------------------------" << std::endl;
-  std::cout << "DEM Loading\n";
+  qes::log::info() << "----------------------------" << std::endl;
+  qes::log::info() << "DEM Loading\n";
 
   float stepX = dx / pixelSizeX;// tie back to dx, dy here.... with scaling of pixelsize
   float stepY = dy / pixelSizeY;
@@ -497,8 +496,8 @@ void DTEHeightField::load()
     }
     printProgress((float)(iYline + 1) / (float)(m_nYSize - 1));
   }
-  std::cout << std::endl;
-  std::cout << "----------------------------" << std::endl;
+  qes::log::info() << std::endl;
+  qes::log::info() << "----------------------------" << std::endl;
   // At end of loop above, all height field data will have been
   // converted to a triangle mesh, stored in m_triList.
 }
@@ -521,7 +520,7 @@ void DTEHeightField::setDomain(Vector3Int &domain, Vector3Float &grid)
                                                          // execution
                                                          // time
 
-  std::cout << "[DTEHeightField] Setting Terrain Boundaries\n";
+  qes::log::info() << "[DTEHeightField] Setting Terrain Boundaries\n";
   for (int q = 0; q < 3; q++) {
     int triListSize = m_triList.size();
 
@@ -553,9 +552,9 @@ void DTEHeightField::setDomain(Vector3Int &domain, Vector3Float &grid)
   auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
   std::chrono::duration<double> elapsed = finish - start;
-  std::cout << "\t\t elapsed time: " << elapsed.count() << " s\n";// Print out elapsed execution time
+  qes::log::info() << "\t\t elapsed time: " << elapsed.count() << " s\n";// Print out elapsed execution time
 
-  printf("[DTEHeightField] Newly calculated domain size: %d %d %d\n", domain[0], domain[1], domain[2]);
+  qes::log::writef(qes::log::Level::info, "[DTEHeightField] Newly calculated domain size: %d %d %d\n", domain[0], domain[1], domain[2]);
 }
 
 void DTEHeightField::outputOBJ(std::string s)
@@ -611,7 +610,7 @@ void DTEHeightField::outputOBJ(std::string s)
   }
 
   file.close();
-  printf("\n");
+  qes::log::writef(qes::log::Level::info, "\n");
 }
 
 void DTEHeightField::printProgress(float percentage)
@@ -619,8 +618,8 @@ void DTEHeightField::printProgress(float percentage)
   int val = (int)(percentage * 100);
   int lpad = (int)(percentage * PBWIDTH);
   int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
-  fflush(stdout);
+  qes::log::writef(qes::log::Level::info, "\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+
 }
 
 
@@ -630,7 +629,7 @@ void DTEHeightField::printProgress(float percentage)
 void DTEHeightField::setCells(WINDSGeneralData *WGD, const WINDSInputData *WID)
 {
 
-  printf("[DTEHeightField] Setting Cell Data...\n");
+  qes::log::writef(qes::log::Level::info, "[DTEHeightField] Setting Cell Data...\n");
 
   std::vector<int> cutCells;
 

@@ -34,6 +34,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #define FLOATS_ARE_EQUAL(x, y) (((x) - (y)) < 0.000001 && ((x) - (y)) > -0.000001)
 
 #include <type_traits>
@@ -435,8 +437,8 @@ public:
 
     // check for near zero value determinants
     if (std::abs(det) < 1e-10) {
-      std::cout << "WARNING (Plume::invert3): matrix nearly singular" << std::endl;
-      std::cout << "abs(det) = \"" << std::abs(det) << std::endl;
+      qes::log::warning() << "WARNING (Plume::invert3): matrix nearly singular" << std::endl;
+      qes::log::info() << "abs(det) = \"" << std::abs(det) << std::endl;
       det = 10e10;
     }
 
@@ -710,7 +712,7 @@ public:
     }
 
     if (iter == 999) {
-      std::cout << "WARNING (Plume::makeRealizable): unable to make stress tensor realizable.";
+      qes::log::warning() << "WARNING (Plume::makeRealizable): unable to make stress tensor realizable.";
     }
 
     for (int k = 0; k < 6; k++)

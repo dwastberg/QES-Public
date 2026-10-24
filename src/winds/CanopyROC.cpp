@@ -1,3 +1,5 @@
+
+#include "util/QESLog.h"
 #include "CanopyROC.h"
 
 #include "WINDSInputData.h"
@@ -52,8 +54,7 @@ void CanopyROC::orthog_vec(float d, float P[2], float Lx[2], float Ly[2], float 
   }
 
   if (orthCase == 0) {
-    std::cerr << "ERROR unable to find valid row-orthogonal vector in ROC model" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR unable to find valid row-orthogonal vector in ROC model" << std::endl; throw qes::InputError(message.str()); }
   }
 
   row_ortho[0] = o_signed[0];
@@ -173,14 +174,12 @@ void CanopyROC::setCellFlags(const WINDSInputData *WID, WINDSGeneralData *WGD, i
 
   // check of illegal definition.
   if (k_start > k_end) {
-    std::cerr << "ERROR in tree definition (k_start > k end)" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR in tree definition (k_start > k end)" << std::endl; throw qes::InputError(message.str()); }
   }
 
 
   if (ceil(1.5 * k_end) > nz - 1) {
-    std::cerr << "ERROR domain too short for tree method" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR domain too short for tree method" << std::endl; throw qes::InputError(message.str()); }
   }
 
   nx_canopy = (i_end - i_start - 1) + 2;
@@ -589,7 +588,7 @@ void CanopyROC::canopyVegetation(WINDSGeneralData *WGD, int building_id)
           }
 
           if (i + i_start == 130 && j + j_start == 150) {
-            // std::cout << "ld: " << ld << " d_dw: " << d_dw << " d_dw_local: " << d_dw_local << " N: " << N << "spreadrate_top: " << spreadrate_top << " szt_local: " << szt_local << " szt_uw: " << szt_uw << " N_e: " << N_e << std::endl;
+            // qes::log::info() << "ld: " << ld << " d_dw: " << d_dw << " d_dw_local: " << d_dw_local << " N: " << N << "spreadrate_top: " << spreadrate_top << " szt_local: " << szt_local << " szt_uw: " << szt_uw << " N_e: " << N_e << std::endl;
           }
 
           // APPLY BLEED FLOW PARAMETERIZATION INSIDE THE ACTUAL VEGETATION
@@ -811,14 +810,14 @@ void CanopyROC::canopyWake(WINDSGeneralData *WGD, int building_id)
     // Mark this edge as "wake" or "no wake"
     if ((num_crossing % 2) != 0) {
       wakeEdges.push_back(0);// no wake
-      // std::cout << "if 1" << std::endl;
+      // qes::log::info() << "if 1" << std::endl;
       // wakeEdges[vtx] = 0;
     } else {
       wakeEdges.push_back(1);// wake
-      // std::cout << "if 2" << std::endl;
+      // qes::log::info() << "if 2" << std::endl;
       // wakeEdges[vtx] = 1;
     }
-    std::cout << "wakeEdges: " << wakeEdges.at(vtx) << " size: " << wakeEdges.size() << " vtx: " << vtx << " num_crossing: " << num_crossing << " x: " << polygonVertices[vtx].x_poly << " y: " << polygonVertices[vtx].y_poly << " midX: " << midX << " midY: " << midY << std::endl;
+    qes::log::info() << "wakeEdges: " << wakeEdges.at(vtx) << " size: " << wakeEdges.size() << " vtx: " << vtx << " num_crossing: " << num_crossing << " x: " << polygonVertices[vtx].x_poly << " y: " << polygonVertices[vtx].y_poly << " midX: " << midX << " midY: " << midY << std::endl;
   }
 
   double uRefHat = u0_uw / M0_uw;

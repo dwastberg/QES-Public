@@ -31,12 +31,14 @@
 /**
  * @file QESFileOutput_v2.cpp
  */
+
+#include "util/QESLog.h"
 #include "QESFileOutput_v2.h"
 #include "DataSource.h"
 
 void QESFileOutput_v2::attachDataSource(DataSource *dataSource)
 {
-  // std::cout << "[FILE] call attach" << std::endl;
+  // qes::log::info() << "[FILE] call attach" << std::endl;
   dataSource->attachToFile(this);
   dataSource->setOutputFields();
   m_list_data_source.push_back(dataSource);
@@ -44,14 +46,14 @@ void QESFileOutput_v2::attachDataSource(DataSource *dataSource)
 
 void QESFileOutput_v2::notifyDataSourcesOfNewTimeEntry()
 {
-  // std::cout << "[FILE] notify all data sources" << std::endl;
+  // qes::log::info() << "[FILE] notify all data sources" << std::endl;
   for (auto ds : m_list_data_source) {
     ds->notifyOfNewTimeEntry();
   }
 }
 void QESFileOutput_v2::save(QEStime &timeIn)
 {
-  // std::cout << "[FILE] call all saves" << std::endl;
+  // qes::log::info() << "[FILE] call all saves" << std::endl;
   for (auto ds : m_list_data_source) {
     ds->pushToFile(timeIn);
   }
@@ -59,6 +61,6 @@ void QESFileOutput_v2::save(QEStime &timeIn)
 
 void QESNullOutput::attachDataSource(DataSource *dataSource)
 {
-  // std::cout << "[FILE] call attach" << std::endl;
+  // qes::log::info() << "[FILE] call attach" << std::endl;
   dataSource->attachToFile(this);
 }

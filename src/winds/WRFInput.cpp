@@ -15,6 +15,8 @@
     GNU General Public License for more details.
 */
 
+
+#include "util/QESLog.h"
 #include <fstream>
 #include <cmath>
 
@@ -317,13 +319,13 @@ WRFInput::WRFInput(const std::string &filename,
     m_TerrainFlag(1), m_BdFlag(0), m_VegFlag(0), m_Z0Flag(2),
     m_performWRFRunCoupling(performWRFCoupling)
 {
-  std::cout << "WRF Input Processor - reading data from " << filename << std::endl;
+  qes::log::info() << "WRF Input Processor - reading data from " << filename << std::endl;
   if (sensorsOnly) {
-    std::cout << "\tOnly parsing wind velocity profiles from WRF file." << std::endl;
+    qes::log::info() << "\tOnly parsing wind velocity profiles from WRF file." << std::endl;
   }
 
   if (m_performWRFRunCoupling) {
-    std::cout << "\n============> WRF-QES Run Coupling Enabled!\n"
+    qes::log::info() << "\n============> WRF-QES Run Coupling Enabled!\n"
               << std::endl;
   }
 
@@ -361,7 +363,7 @@ WRFInput::WRFInput(const std::string &filename,
 
     // Wait for WRF to start the coupling...
     while (wrfFRAME0_FMW != 1) {
-      std::cout << "Waiting for FRAME0_FMW to be initialized to 1 before starting the coupling with WRF..." << std::endl;
+      qes::log::info() << "Waiting for FRAME0_FMW to be initialized to 1 before starting the coupling with WRF..." << std::endl;
 
       // close file
       wrfInputFile.close();
@@ -373,12 +375,12 @@ WRFInput::WRFInput(const std::string &filename,
       wrfInputFile.getVar("FRAME0_FMW").getVar(fmw_StartIdx, fmw_counts, &wrfFRAME0_FMW);
     }
 
-    std::cout << "WRF-QES Coupling: Received starting frame count = " << wrfFRAME0_FMW << std::endl;
+    qes::log::info() << "WRF-QES Coupling: Received starting frame count = " << wrfFRAME0_FMW << std::endl;
     currWRFFRAME0Num = wrfFRAME0_FMW;
   }
 
   // Report the version information
-  std::cout << "\tWRF Version: " << vString << std::endl;
+  qes::log::info() << "\tWRF Version: " << vString << std::endl;
 
   // Grab the Stored end of the dimension and subtract 1.
   // xDim+1 is a pointer reference to the 2nd array value.
@@ -398,7 +400,7 @@ WRFInput::WRFInput(const std::string &filename,
   atm_nx = xDim[1] - xDim[0] + 1;
   atm_ny = yDim[1] - yDim[0] + 1;
 
-  std::cout << "WRF Atmospheric Mesh Domain is " << atm_nx << " X " << atm_ny << " cells." << std::endl;
+  qes::log::info() << "WRF Atmospheric Mesh Domain is " << atm_nx << " X " << atm_ny << " cells." << std::endl;
 
   // Extract DX and DY of the Atm Mesh
   double cellSize[2] = { 1, 1 };
@@ -411,7 +413,7 @@ WRFInput::WRFInput(const std::string &filename,
   atm_dx = cellSize[0];
   atm_dy = cellSize[1];
 
-  std::cout << "WRF Atmospheric Mesh Resolution (dx,dy) is (" << atm_dx << ", " << atm_dy << ")" << std::endl;
+  qes::log::info() << "WRF Atmospheric Mesh Resolution (dx,dy) is (" << atm_dx << ", " << atm_dy << ")" << std::endl;
 
   // Check to see if both sensor data and terrain mesh data are
   // needing to be extracted
@@ -420,7 +422,7 @@ WRFInput::WRFInput(const std::string &filename,
     // Extract BOTH "fire" mesh data and the Wind Profiles from
     // the Atmosperic Mesh
 
-    std::cout << "Attempting to read fire mesh from WRF output file data..." << std::endl;
+    qes::log::info() << "Attempting to read fire mesh from WRF output file data..." << std::endl;
 
     //
     // IMPORTANT -- need to include code to check for fire mesh
@@ -431,9 +433,9 @@ WRFInput::WRFInput(const std::string &filename,
 
     // Need something like this...
     // if ( !(wrfInputFile.getVar("FXLONG") && wrfInputFile.getVar("FXLAT")) ) {
-    // std::cerr << "ERROR!  WRF input for reading terrain requires that Fire Mesh data exists in WRF Output file." << std::endl;
-    // std::cerr << "Exiting." << std::endl;
-    // exit(EXIT_FAILURE);
+    // qes::log::error() << "ERROR!  WRF input for reading terrain requires that Fire Mesh data exists in WRF Output file." << std::endl;
+    // qes::log::error() << "Exiting." << std::endl;
+    // throw qes::RuntimeError("QES failure in WRFInput.cpp");
     // }
 
 
@@ -468,9 +470,9 @@ WRFInput::WRFInput(const std::string &filename,
     // this parameter needs to come from xml...
     fm_dz = 12.0f;
 
-    std::cout << "WRF Fire Mesh dimensions (nx, ny): " << fm_nx << " by " << fm_ny << std::endl;
-    std::cout << "WRF Fire Mesh Resolution (dx, dy): (" << fm_dx << ", " << fm_dy << ")" << std::endl;
-    std::cout << "\ttotal domain size: " << fm_nx * fm_dx << "m by " << fm_ny * fm_dy << "m" << std::endl;
+    qes::log::info() << "WRF Fire Mesh dimensions (nx, ny): " << fm_nx << " by " << fm_ny << std::endl;
+    qes::log::info() << "WRF Fire Mesh Resolution (dx, dy): (" << fm_dx << ", " << fm_dy << ")" << std::endl;
+    qes::log::info() << "\ttotal domain size: " << fm_nx * fm_dx << "m by " << fm_ny * fm_dy << "m" << std::endl;
 
     std::vector<size_t> startIdx = { 0, 0, 0, 0 };
     std::vector<size_t> counts = { 1,
@@ -482,7 +484,7 @@ WRFInput::WRFInput(const std::string &filename,
     wrfInputFile.getVar("FXLONG").getVar(startIdx, counts, fxlong.data());
     wrfInputFile.getVar("FXLAT").getVar(startIdx, counts, fxlat.data());
 
-    std::cout << "\treading data for FWH, FZ0, and ZSF..." << std::endl;
+    qes::log::info() << "\treading data for FWH, FZ0, and ZSF..." << std::endl;
 
     fwh.resize(fm_nx * fm_ny);
     std::vector<double> fz0(fm_nx * fm_ny);
@@ -505,7 +507,7 @@ WRFInput::WRFInput(const std::string &filename,
         if (fmHeight[l_idx] < fm_minWRFAlt) fm_minWRFAlt = fmHeight[l_idx];
       }
     }
-    std::cout << "Fire Mesh Min Ht: " << fm_minWRFAlt << ", Max Ht: " << fm_maxWRFAlt << std::endl;
+    qes::log::info() << "Fire Mesh Min Ht: " << fm_minWRFAlt << ", Max Ht: " << fm_maxWRFAlt << std::endl;
 
     // if specified, use the max height... otherwise, pick one
     // that's about twice the max height to give room for the flow
@@ -517,25 +519,25 @@ WRFInput::WRFInput(const std::string &filename,
     // the max and min height here, rather than building off the max
     // height.
     float heightRange = fm_maxWRFAlt - fm_minWRFAlt;
-    std::cout << "Terrain height range: " << heightRange << std::endl;
+    qes::log::info() << "Terrain height range: " << heightRange << std::endl;
 
     // use 110% of height range for now
     int numZCells = (int)floor((heightRange * 1.10) / fm_dz) + 1;
-    std::cout << "With dz = " << fm_dz << ", nz = " << numZCells << std::endl;
+    qes::log::info() << "With dz = " << fm_dz << ", nz = " << numZCells << std::endl;
     fm_nz = numZCells;
 
-    std::cout << "Setting domain nz: " << fm_nz << std::endl;
+    qes::log::info() << "Setting domain nz: " << fm_nz << std::endl;
 
     //
     // override any zone information?  Need to fix these use cases
     //
     UTMZone = (int)floor((fxlong[0] + 180) / 6) + 1;
-    std::cout << "UTM Zone: " << UTMZone << std::endl;
+    qes::log::info() << "UTM Zone: " << UTMZone << std::endl;
 
-    std::cout << "(Lat,Long) at Lower Left (LL) = " << fxlat[0] << ", " << fxlong[0] << std::endl;
-    std::cout << "(Lat,Long) at Lower Right (LR) = " << fxlat[fm_nx - 1] << ", " << fxlong[fm_nx - 1] << std::endl;
-    std::cout << "(Lat,Long) at Upper Left (UL) = " << fxlat[(fm_ny - 1) * fm_nx] << ", " << fxlong[(fm_ny - 1) * fm_nx] << std::endl;
-    std::cout << "(Lat,Long) at Upper Right (UR) = " << fxlat[fm_nx - 1 + (fm_ny - 1) * fm_nx] << ", " << fxlong[fm_nx - 1 + (fm_ny - 1) * fm_nx] << std::endl;
+    qes::log::info() << "(Lat,Long) at Lower Left (LL) = " << fxlat[0] << ", " << fxlong[0] << std::endl;
+    qes::log::info() << "(Lat,Long) at Lower Right (LR) = " << fxlat[fm_nx - 1] << ", " << fxlong[fm_nx - 1] << std::endl;
+    qes::log::info() << "(Lat,Long) at Upper Left (UL) = " << fxlat[(fm_ny - 1) * fm_nx] << ", " << fxlong[(fm_ny - 1) * fm_nx] << std::endl;
+    qes::log::info() << "(Lat,Long) at Upper Right (UR) = " << fxlat[fm_nx - 1 + (fm_ny - 1) * fm_nx] << ", " << fxlong[fm_nx - 1 + (fm_ny - 1) * fm_nx] << std::endl;
 
 
     // variables to hold the UTM coordinates of the corners
@@ -546,16 +548,16 @@ WRFInput::WRFInput(const std::string &filename,
       urUTMx, urUTMy;
 
     UTMConv(fxlong[0], fxlat[0], domainUTMx, domainUTMy, UTMZone, 0);
-    std::cout << std::setprecision(9) << "\tConverted LL UTM: " << domainUTMx << ", " << domainUTMy << std::endl;
+    qes::log::info() << std::setprecision(9) << "\tConverted LL UTM: " << domainUTMx << ", " << domainUTMy << std::endl;
 
     UTMConv(fxlong[fm_nx - 1], fxlat[fm_nx - 1], lrUTMx, lrUTMy, UTMZone, 0);
-    std::cout << std::setprecision(9) << "\tConverted LR UTM: " << lrUTMx << ", " << lrUTMy << std::endl;
+    qes::log::info() << std::setprecision(9) << "\tConverted LR UTM: " << lrUTMx << ", " << lrUTMy << std::endl;
 
     UTMConv(fxlong[(fm_ny - 1) * fm_nx], fxlat[(fm_ny - 1) * fm_nx], ulUTMx, ulUTMy, UTMZone, 0);
-    std::cout << std::setprecision(9) << "\tConverted UL UTM: " << ulUTMx << ", " << ulUTMy << std::endl;
+    qes::log::info() << std::setprecision(9) << "\tConverted UL UTM: " << ulUTMx << ", " << ulUTMy << std::endl;
 
     UTMConv(fxlong[fm_nx - 1 + (fm_ny - 1) * fm_nx], fxlat[fm_nx - 1 + (fm_ny - 1) * fm_nx], urUTMx, urUTMy, UTMZone, 0);
-    std::cout << std::setprecision(9) << "\tConverted UR UTM: " << urUTMx << ", " << urUTMy << std::endl;
+    qes::log::info() << std::setprecision(9) << "\tConverted UR UTM: " << urUTMx << ", " << urUTMy << std::endl;
 
 
     dimX = fm_nx * fm_dx;
@@ -569,10 +571,10 @@ WRFInput::WRFInput(const std::string &filename,
 
         int l_idx = i + j * fm_nx;
         abyRaster[l_idx] = fmHeight[l_idx];
-        // std::cout << "height = " << fmHeight[ l_idx ] << std::endl;
+        // qes::log::info() << "height = " << fmHeight[ l_idx ] << std::endl;
       }
     }
-    std::cout << "Done." << std::endl;
+    qes::log::info() << "Done." << std::endl;
 
 #if 0
         // 
@@ -615,13 +617,13 @@ WRFInput::WRFInput(const std::string &filename,
         std::ostringstream proj4ss;
         proj4ss << "+proj=lcc +lat_1=" << lat1 << " +lat_2=" << lat2 << " +lat_0=" << lat0 << " +lon_0=" << lon0 << " +a=6370000.0 +b=6370000.0";
 
-        std::cout << "Initializing WRF Spatial Reference from PROJ4 string: " << proj4ss.str() << std::endl;
+        qes::log::info() << "Initializing WRF Spatial Reference from PROJ4 string: " << proj4ss.str() << std::endl;
         OGRSpatialReference wrfSpatialRef;
         wrfSpatialRef.importFromProj4( proj4ss.str().c_str() );
 
         char *exportResult;
         wrfSpatialRef.exportToPrettyWkt(&exportResult);
-        std::cout << "WRF Spatial Reference: " << exportResult << std::endl;
+        qes::log::info() << "WRF Spatial Reference: " << exportResult << std::endl;
         CPLFree(exportResult);
 
         std::string proj4_spherLatLon = "+proj=latlong +a=6370000 +b=6370000";
@@ -655,9 +657,9 @@ WRFInput::WRFInput(const std::string &filename,
         // geotransform_atm = (x0_atm,dx_atm,0,y1_atm,0,-dy_atm)
 
 //    OGRCoordinateTransformation *wrfCoordXform = OGRCreateCoordinateTransformation(&ll_proj, &wrfSpatialRef);
-//    std::cout << "clon, clat = " << clon << ", " << clat << std::endl;
+//    qes::log::info() << "clon, clat = " << clon << ", " << clat << std::endl;
 //    wrfCoordXform->Transform(1, &clon, &clat);
-//    std::cout << "Transformed: clon, clat = " << clon << ", " << clat << std::endl;
+//    qes::log::info() << "Transformed: clon, clat = " << clon << ", " << clat << std::endl;
 
         //  NC_GLOBAL#TRUELAT1=30
         //  NC_GLOBAL#TRUELAT2=34
@@ -703,7 +705,7 @@ WRFInput::WRFInput(const std::string &filename,
 
 //    ogrCoordXform3->Transform(1, lon2eastings, lat2northings);
         ogrCoordXform4->Transform(1, lon2eastings, lat2northings);
-        std::cout << "UTM: " << lon2eastings[0] << ", " << lat2northings[0] << std::endl;
+        qes::log::info() << "UTM: " << lon2eastings[0] << ", " << lat2northings[0] << std::endl;
 #endif
 
     //
@@ -731,7 +733,7 @@ WRFInput::WRFInput(const std::string &filename,
     double t_x0_fire = -nx_fire / 2. * dx_fire + lon2eastings[0];
     double t_y1_fire = (ny_fire / 2. + sry) * dy_fire + lat2northings[0];
 
-    std::cout << "Xform: " << srx << ", " << sry
+    qes::log::info() << "Xform: " << srx << ", " << sry
               << "; " << nx_fire << ", " << ny_fire
               << "; " << dx_fire << ", " << dy_fire
               << "; " << t_x0_fire << ", " << t_y1_fire << std::endl;
@@ -758,7 +760,7 @@ WRFInput::WRFInput(const std::string &filename,
   gblAttIter = globalAttributes.find("BOTTOM-TOP_GRID_DIMENSION");
   gblAttIter->second.getValues(&atm_nz);
 
-  std::cout << "WRF Atmospheric Mesh Domain (nx, ny, nz): " << atm_nx << " X " << atm_ny << " X " << atm_ny << " cells." << std::endl;
+  qes::log::info() << "WRF Atmospheric Mesh Domain (nx, ny, nz): " << atm_nx << " X " << atm_ny << " X " << atm_ny << " cells." << std::endl;
 
   std::vector<size_t> atm_startIdx = { 0, 0, 0 };
   std::vector<size_t> atm_counts = { 1,
@@ -796,7 +798,7 @@ WRFInput::WRFInput(const std::string &filename,
   std::vector<double> phData(2 * atm_nz * atm_ny * atm_nx);
   wrfInputFile.getVar("PH").getVar(atmStartIdx, atmCounts, phData.data());
 
-  std::cout << "Reading PHB and PH from Atmospheric Mesh..." << std::endl;
+  qes::log::info() << "Reading PHB and PH from Atmospheric Mesh..." << std::endl;
 
   //
   // Calculate the height  (PHB + PH) / 9.81
@@ -812,7 +814,7 @@ WRFInput::WRFInput(const std::string &filename,
       }
     }
   }
-  std::cout << "\tpressure-based height computed." << std::endl;
+  qes::log::info() << "\tpressure-based height computed." << std::endl;
 
   // calculate number of altitudes to store, which is one less than
   // nz
@@ -824,7 +826,7 @@ WRFInput::WRFInput(const std::string &filename,
   // When these are read in, we will read one additional cell in X
   // and Y, for U and V, respectively.
 
-  std::cout << "Reading U and V staggered wind input from WRF..." << std::endl;
+  qes::log::info() << "Reading U and V staggered wind input from WRF..." << std::endl;
 
   atmCounts[3] = atm_nx + 1;
   std::vector<double> UStaggered(2 * (atm_nz - 1) * atm_ny * (atm_nx + 1));
@@ -857,7 +859,7 @@ WRFInput::WRFInput(const std::string &filename,
     }
   }
 
-  std::cout << "\twind input complete" << std::endl;
+  qes::log::info() << "\twind input complete" << std::endl;
 
   // Calculate CoordZ
   std::vector<double> coordZ(2 * (atm_nz - 1) * atm_ny * atm_nx);
@@ -889,7 +891,7 @@ WRFInput::WRFInput(const std::string &filename,
     }
   }
 
-  std::cout << "Wind speed computed." << std::endl;
+  qes::log::info() << "Wind speed computed." << std::endl;
 
 
   //
@@ -911,7 +913,7 @@ WRFInput::WRFInput(const std::string &filename,
     }
   }
 
-  std::cout << "Wind direction computed." << std::endl;
+  qes::log::info() << "Wind direction computed." << std::endl;
 
   // use the Fz0 rather than LU_INDEX
 
@@ -919,7 +921,7 @@ WRFInput::WRFInput(const std::string &filename,
   // roughness length...
   // LU = ncread(WRFFile,'LU_INDEX');
   // SimData.LU = LU(SimData.XSTART:SimData.XEND, SimData.YSTART:SimData.YEND,1)';
-  std::cout << "Reading LU_INDEX and computing roughness lengths..." << std::endl;
+  qes::log::info() << "Reading LU_INDEX and computing roughness lengths..." << std::endl;
 
   std::vector<size_t> atmStartIdx_2D = { 0, 0, 0 };
   std::vector<size_t> atmCounts_2D = { 1,
@@ -951,7 +953,7 @@ WRFInput::WRFInput(const std::string &filename,
     // supposed to be some other data source
     std::fill(z0Data.begin(), z0Data.end(), 0.1);
   } else {
-    std::cerr << "Unknown Z0Flag..." << std::endl;
+    qes::log::error() << "Unknown Z0Flag..." << std::endl;
     assert(m_Z0Flag > 0 && m_Z0Flag < 4);
   }
 
@@ -963,18 +965,18 @@ WRFInput::WRFInput(const std::string &filename,
   //
   // /////////////////////////////////////////////////////////
 
-  std::cout << "Reading and processing WRF Stations for input wind profiles..." << std::endl;
+  qes::log::info() << "Reading and processing WRF Stations for input wind profiles..." << std::endl;
 
-  std::cout << "Dim Count: " << wrfInputFile.getVar("U0_FMW").getDimCount() << std::endl;
+  qes::log::info() << "Dim Count: " << wrfInputFile.getVar("U0_FMW").getDimCount() << std::endl;
   for (auto dIdx = 0u; dIdx < wrfInputFile.getVar("U0_FMW").getDimCount(); dIdx++) {
     NcDim dim = wrfInputFile.getVar("U0_FMW").getDim(dIdx);
-    std::cout << "Dim " << dIdx << ", Size=" << dim.getSize() << std::endl;
+    qes::log::info() << "Dim " << dIdx << ", Size=" << dim.getSize() << std::endl;
   }
 
   // Extract time dim size
   NcDim dim = wrfInputFile.getVar("U0_FMW").getDim(0);
   int timeSize = dim.getSize();
-  std::cout << "Number of time series:  " << timeSize << std::endl;
+  qes::log::info() << "Number of time series:  " << timeSize << std::endl;
 
   // Extract height dim size
   dim = wrfInputFile.getVar("U0_FMW").getDim(1);
@@ -1005,13 +1007,13 @@ WRFInput::WRFInput(const std::string &filename,
 
   int wrfCHSUM0_FMW = 0;
   wrfInputFile.getVar("CHSUM0_FMW").getVar(chksum_StartIdx, chksum_counts, &wrfCHSUM0_FMW);
-  std::cout << "WRF CHSUM0_FMW = " << wrfCHSUM0_FMW << std::endl;
+  qes::log::info() << "WRF CHSUM0_FMW = " << wrfCHSUM0_FMW << std::endl;
 
   int chkSum = 0;
   chkSum = checksum(chkSum, u0_fmw);
   chkSum = checksum(chkSum, v0_fmw);
   chkSum = checksum(chkSum, w0_fmw);
-  std::cout << "QES checksum of FMW fields: " << chkSum << std::endl;
+  qes::log::info() << "QES checksum of FMW fields: " << chkSum << std::endl;
 
   assert(wrfCHSUM0_FMW == chkSum);
 
@@ -1048,26 +1050,26 @@ WRFInput::WRFInput(const std::string &filename,
     maxWRFAlt = fm_nz * fm_dz;// again, only works with dz=1
   }
 
-  std::cout << "fm_nz set to " << fm_nz << std::endl;
+  qes::log::info() << "fm_nz set to " << fm_nz << std::endl;
 
   std::vector<double> atm_hgt(atm_nx * atm_ny);
   wrfInputFile.getVar("HGT").getVar(atm_startIdx, atm_counts, atm_hgt.data());
 
-  std::cout << "Max WRF Alt: " << maxWRFAlt << std::endl;
+  qes::log::info() << "Max WRF Alt: " << maxWRFAlt << std::endl;
 
   //
   // Walk over the atm mesh, extract wind profiles for stations
   //
 
-  std::cout << std::setprecision(9) << "UTM(LL): " << domainUTMx << ", " << domainUTMy << ", Zone=" << UTMZone << "(" << zoneUTM << ")"
+  qes::log::info() << std::setprecision(9) << "UTM(LL): " << domainUTMx << ", " << domainUTMy << ", Zone=" << UTMZone << "(" << zoneUTM << ")"
             << "\n";
 
-  std::cout << "DIM: " << dimX << ", " << dimY << "\n";
+  qes::log::info() << "DIM: " << dimX << ", " << dimY << "\n";
 
   double domainUTMx_UR = domainUTMx + dimX;
   double domainUTMy_UR = domainUTMy + dimY;
 
-  std::cout << std::setprecision(9) << "UTM(UR): " << domainUTMx_UR << ", " << domainUTMy_UR << std::endl;
+  qes::log::info() << std::setprecision(9) << "UTM(UR): " << domainUTMx_UR << ", " << domainUTMy_UR << std::endl;
 
   double c_lat_ll, c_long_ll;
   double c_lat_ur, c_long_ur;
@@ -1075,8 +1077,8 @@ WRFInput::WRFInput(const std::string &filename,
   UTMConv(c_long_ll, c_lat_ll, domainUTMx, domainUTMy, UTMZone, 1);
   UTMConv(c_long_ur, c_lat_ur, domainUTMx_UR, domainUTMy_UR, UTMZone, 1);
 
-  std::cout << std::setprecision(9) << "LL: " << c_lat_ll << ", " << c_long_ll << std::endl;
-  std::cout << std::setprecision(9) << "UR: " << c_lat_ur << ", " << c_long_ur << std::endl;
+  qes::log::info() << std::setprecision(9) << "LL: " << c_lat_ll << ", " << c_long_ll << std::endl;
+  qes::log::info() << std::setprecision(9) << "UR: " << c_lat_ur << ", " << c_long_ur << std::endl;
 
   for (int yIdx = 0; yIdx < atm_ny; yIdx += stepSize) {
     for (int xIdx = 0; xIdx < atm_nx; xIdx += stepSize) {
@@ -1084,7 +1086,7 @@ WRFInput::WRFInput(const std::string &filename,
       stationData sd;
 
       int atm_idx = (yIdx * atm_nx) + xIdx;
-      // std::cout << std::setprecision(9)
+      // qes::log::info() << std::setprecision(9)
       // << "Lat: " << atm_xlat[ atm_idx ]
       // << ", Long: " << atm_xlong[ atm_idx ]
       // << std::endl;
@@ -1104,17 +1106,17 @@ WRFInput::WRFInput(const std::string &filename,
         double utmStatY;
         int newZone = (int)floor((atm_xlong[atm_idx] + 180) / 6) + 1;
 
-        std::cout << "\t zone = " << newZone << std::endl;
+        qes::log::info() << "\t zone = " << newZone << std::endl;
         double latStat = atm_xlat[atm_idx];
         double longStat = atm_xlong[atm_idx];
         UTMConv(longStat, latStat, utmStatX, utmStatY, newZone, 0);
 
-        std::cout << "Stat Lat/Long: " << latStat << ", " << longStat << " and UTM " << utmStatX << ", " << utmStatY << ", Zone: " << newZone << std::endl;
+        qes::log::info() << "Stat Lat/Long: " << latStat << ", " << longStat << " and UTM " << utmStatX << ", " << utmStatY << ", Zone: " << newZone << std::endl;
 
         sd.xCoord = utmStatX - domainUTMx;// need halo still    xIdx * atm_dx;  // use actual position
         sd.yCoord = utmStatY - domainUTMy;// sd.yCoord = yIdx * atm_dy;  // "
 
-        std::cout << "\tAdding SD: " << sd.xCoord << ", " << sd.yCoord << std::endl;
+        qes::log::info() << "\tAdding SD: " << sd.xCoord << ", " << sd.yCoord << std::endl;
 
         // Pull Z0
         sd.z0 = z0Data[yIdx * atm_nx + xIdx];
@@ -1124,7 +1126,7 @@ WRFInput::WRFInput(const std::string &filename,
         // Use the last time step
         for (int t = 0; t < 1; t++) {
 
-          std::cout << "Time: " << t << std::endl;
+          qes::log::info() << "Time: " << t << std::endl;
 
           // At this X, Y, look through all heights and
           // accumulate the heights that exist between our min
@@ -1142,7 +1144,7 @@ WRFInput::WRFInput(const std::string &filename,
 
               // Use ZSF + FZ0 -- should be built into coordZ it seems
 
-              std::cout << "profile height at " << k << ": " << coordZ[l_idx] - atm_hgt[yIdx * atm_nx + xIdx] << "\n";
+              qes::log::info() << "profile height at " << k << ": " << coordZ[l_idx] - atm_hgt[yIdx * atm_nx + xIdx] << "\n";
 
               profData profEl;
               profEl.zCoord = coordZ[l_idx] - atm_hgt[yIdx * atm_nx + xIdx];
@@ -1223,12 +1225,12 @@ void WRFInput::readDomainInfo()
     //
     // input->getVariableData("u",start,count,wind.u);
 
-    std::cout << "Number of attributes: " << wrfInputFile.getAttCount() << std::endl;
+    qes::log::info() << "Number of attributes: " << wrfInputFile.getAttCount() << std::endl;
     std::multimap<std::string,NcGroupAtt> globalAttributes = wrfInputFile.getAtts();
 
     // You can see all of the attributes with the following snippet:
     // for (auto i=globalAttributes.cbegin(); i!=globalAttributes.cend(); i++) {
-    // std::cout << "Attribute Name: " << i->first << std::endl;
+    // qes::log::info() << "Attribute Name: " << i->first << std::endl;
     // }
 
     auto gblAttIter = globalAttributes.find("WEST-EAST_GRID_DIMENSION");
@@ -1249,7 +1251,7 @@ void WRFInput::readDomainInfo()
     nx = xDim[1] - xDim[0] + 1;
     ny = yDim[1] - yDim[0] + 1;
 
-    std::cout << "Domain is " << nx << " X " << ny << " cells." << std::endl;
+    qes::log::info() << "Domain is " << nx << " X " << ny << " cells." << std::endl;
 
     // Pull out DX and DY
     double cellSize[2];
@@ -1261,7 +1263,7 @@ void WRFInput::readDomainInfo()
 
     m_dx = cellSize[0];
     m_dy = cellSize[1];
-    std::cout << "Resolution (dx,dy) is ("<< m_dx << ", " << m_dy << ")" << std::endl;
+    qes::log::info() << "Resolution (dx,dy) is ("<< m_dx << ", " << m_dy << ")" << std::endl;
 
 
 // % If new domain borders are defined
@@ -1307,11 +1309,11 @@ void WRFInput::readDomainInfo()
     // FXLONG
     // std::vector<NcDim> fxlongDims = wrfInputFile.getVar("FXLONG").getDims();
     // for (int i=0; i<fxlongdims.size(); i++) {
-    //    std::cout << "Dim: " << fxlongdims[i].getName() << ", ";
+    //    qes::log::info() << "Dim: " << fxlongdims[i].getName() << ", ";
     //     if (fxlongdims[i].isUnlimited())
-    //      std::cout << "Unlimited (" << fxlongdims[i].getSize() << ")" << std::endl;
+    //      qes::log::info() << "Unlimited (" << fxlongdims[i].getSize() << ")" << std::endl;
     //     else
-    //    std::cout << fxlongdims[i].getSize() << std::endl;
+    //    qes::log::info() << fxlongdims[i].getSize() << std::endl;
     //  }
     //
     // These are the dimensions of the fire mesh
@@ -1339,20 +1341,20 @@ void WRFInput::readDomainInfo()
     int sizeZSF_x = wrfInputFile.getVar("ZSF").getDim(2).getSize();
     int sizeZSF_y = wrfInputFile.getVar("ZSF").getDim(1).getSize();
 
-    std::cout << "sizes: " << sizeHGT_x << ", " << sizeHGT_y << ", " << sizeZSF_x << ", " << sizeZSF_y << std::endl;
+    qes::log::info() << "sizes: " << sizeHGT_x << ", " << sizeHGT_y << ", " << sizeZSF_x << ", " << sizeZSF_y << std::endl;
 
     // float sr_x = size(zsf,1)/(size(hgt,1)+1);
     // float sr_y = size(zsf,2)/(size(hgt,2)+1);
     float sr_x = sizeZSF_x/(sizeHGT_x+1);
     float sr_y = sizeZSF_y/(sizeHGT_y+1);
 
-    std::cout << "sr_x, sr_y = (" << sr_x << ", " << sr_y << ")" << std::endl;
+    qes::log::info() << "sr_x, sr_y = (" << sr_x << ", " << sr_y << ")" << std::endl;
 
     float dxf = m_dx / sr_x;
     float dyf = m_dy / sr_y;
     // Then dxf=DX/sr_x, dyf=DY/sr_y
 
-    std::cout << "Fire Mesh (dxf, dyf) = (" << dxf << ", " << dyf << ")" << std::endl;
+    qes::log::info() << "Fire Mesh (dxf, dyf) = (" << dxf << ", " << dyf << ")" << std::endl;
 
     double minHt = std::numeric_limits<double>::max(),
         maxHt = std::numeric_limits<double>::min();
@@ -1368,15 +1370,15 @@ void WRFInput::readDomainInfo()
     }
 
     double rangeHt = maxHt - minHt;
-    std::cout << "Min Ht: " << minHt << ", Max Ht: " << maxHt << std::endl;
+    qes::log::info() << "Min Ht: " << minHt << ", Max Ht: " << maxHt << std::endl;
 
     int UTMZone = (int)floor((fxlong[0] + 180) / 6) + 1;
 
-    std::cout << "UTM Zone: " << UTMZone << std::endl;
-    std::cout << "(Lat,Long) at [0][0] = " << fxlat[0] << ", " << fxlong[0] << std::endl;   // 524972.33, 3376924.26
-    std::cout << "(Lat,Long) at [nx-1][0] = " << fxlat[fm_nx-1] << ", " << fxlong[nx-1] << std::endl;
-    std::cout << "(Lat,Long) at [0][ny-1] = " << fxlat[(fm_ny-1)*fm_nx] << ", " << fxlong[(fm_ny-1)*fm_nx] << std::endl;
-    std::cout << "(Lat,Long) at [nx-1][ny-1] = " << fxlat[fm_nx-1 + (fm_ny-1)*fm_nx] << ", " << fxlong[fm_nx-1 + (fm_ny-1)*fm_nx] << std::endl;
+    qes::log::info() << "UTM Zone: " << UTMZone << std::endl;
+    qes::log::info() << "(Lat,Long) at [0][0] = " << fxlat[0] << ", " << fxlong[0] << std::endl;   // 524972.33, 3376924.26
+    qes::log::info() << "(Lat,Long) at [nx-1][0] = " << fxlat[fm_nx-1] << ", " << fxlong[nx-1] << std::endl;
+    qes::log::info() << "(Lat,Long) at [0][ny-1] = " << fxlat[(fm_ny-1)*fm_nx] << ", " << fxlong[(fm_ny-1)*fm_nx] << std::endl;
+    qes::log::info() << "(Lat,Long) at [nx-1][ny-1] = " << fxlat[fm_nx-1 + (fm_ny-1)*fm_nx] << ", " << fxlong[fm_nx-1 + (fm_ny-1)*fm_nx] << std::endl;
 
     // [0] is lower left, [1] is pixel width, [2] is , [3] is
     double adfGeoTransform[6] = {  524972.33, dxf, 0, 3376924.26, 0, -dyf };
@@ -1391,15 +1393,14 @@ void WRFInput::readDomainInfo()
     char **papszMetadata;
     poDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
     if( poDriver == NULL ) {
-        std::cerr << "No GTiff driver." << std::endl;
-        exit( 1 );
+        { std::ostringstream message; message << "No GTiff driver." << std::endl; throw qes::InputError(message.str()); }
     }
 
     papszMetadata = poDriver->GetMetadata();
 //    if( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ) )
-//        printf( "Driver %s supports Create() method.\n", pszFormat );
+//        qes::log::writef(qes::log::Level::info,  "Driver %s supports Create() method.\n", pszFormat );
 //    if( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATECOPY, FALSE ) )
-//        printf( "Driver %s supports CreateCopy() method.\n", pszFormat );
+//        qes::log::writef(qes::log::Level::info,  "Driver %s supports CreateCopy() method.\n", pszFormat );
 
     GDALDataset *poDstDS;
     char **papszOptions = NULL;
@@ -1414,16 +1415,16 @@ void WRFInput::readDomainInfo()
 
     std::vector<float> abyRaster( fm_nx * fm_ny );
 
-    std::cout << "setting hts" << std::endl;
+    qes::log::info() << "setting hts" << std::endl;
     for (int i=0; i<fm_nx; i++) {
         for (int j=0; j<fm_ny; j++) {
 
             int l_idx = i + j*fm_nx;
-            // std::cout << "Setting ht: " << ((fmHeight[l_idx]-minHt)/rangeHt) * 255 << std::endl;
+            // qes::log::info() << "Setting ht: " << ((fmHeight[l_idx]-minHt)/rangeHt) * 255 << std::endl;
             abyRaster[ l_idx ] = ((fmHeight[l_idx];
         }
     }
-    std::cout << "Done." << std::endl;
+    qes::log::info() << "Done." << std::endl;
 
 
     poDstDS->SetGeoTransform( adfGeoTransform );
@@ -1445,7 +1446,7 @@ void WRFInput::readDomainInfo()
 
     CPLFree( pszSRS_WKT );
 
-    std::cout << "raster band" << std::endl;
+    qes::log::info() << "raster band" << std::endl;
 
     poBand = poDstDS->GetRasterBand(1);
     poBand->RasterIO( GF_Write, 0, 0, fm_nx, fm_ny,
@@ -1459,22 +1460,22 @@ void WRFInput::readDomainInfo()
         // Relief
         //
         NcVar reliefVar = wrfInputFile.getVar("HGT");
-        std::cout << "relief dim count: " << reliefVar.getDimCount() << std::endl;
+        qes::log::info() << "relief dim count: " << reliefVar.getDimCount() << std::endl;
         std::vector<NcDim> dims = reliefVar.getDims();
         long totalDim = 1;
         for (int i=0; i<dims.size(); i++) {
-            std::cout << "Dim: " << dims[i].getName() << ", ";
+            qes::log::info() << "Dim: " << dims[i].getName() << ", ";
             if (dims[i].isUnlimited())
-                std::cout << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
+                qes::log::info() << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
             else
-                std::cout << dims[i].getSize() << std::endl;
+                qes::log::info() << dims[i].getSize() << std::endl;
             totalDim *= dims[i].getSize();
         }
-        std::cout << "relief att count: " << reliefVar.getAttCount() << std::endl;
+        qes::log::info() << "relief att count: " << reliefVar.getAttCount() << std::endl;
         std::map<std::string, NcVarAtt> reliefVar_attrMap = reliefVar.getAtts();
         for (std::map<std::string, NcVarAtt>::const_iterator ci=reliefVar_attrMap.begin();
              ci!=reliefVar_attrMap.end(); ++ci) {
-            std::cout << "Relief Attr: " << ci->first << std::endl;
+            qes::log::info() << "Relief Attr: " << ci->first << std::endl;
     }
 
     // this is a 114 x 114 x 41 x 360 dim array...
@@ -1495,13 +1496,13 @@ void WRFInput::readDomainInfo()
     for (auto l=0; l<subsetDim; l++)
         relief[l] = reliefData[l];
 
-    std::cout << "first 10 for relief" << std::endl;
+    qes::log::info() << "first 10 for relief" << std::endl;
     for (auto l=0; l<10; l++)
-        std::cout << relief[l] << std::endl;
+        qes::log::info() << relief[l] << std::endl;
 
-    std::cout << "last 10 for relief" << std::endl;
+    qes::log::info() << "last 10 for relief" << std::endl;
     for (auto l=subsetDim-10-1; l<subsetDim; l++)
-        std::cout << relief[l] << std::endl;
+        qes::log::info() << relief[l] << std::endl;
 
     delete [] reliefData;
 
@@ -1513,23 +1514,23 @@ void WRFInput::readDomainInfo()
     // LU = ncread(WRFFile,'LU_INDEX');
     //
     NcVar LUIndexVar = wrfInputFile.getVar("LU_INDEX");
-    std::cout << "LUIndex dim count: " << LUIndexVar.getDimCount() << std::endl;
+    qes::log::info() << "LUIndex dim count: " << LUIndexVar.getDimCount() << std::endl;
     dims.clear();
     dims = LUIndexVar.getDims();
     totalDim = 1;
     for (int i=0; i<dims.size(); i++) {
-        std::cout << "Dim: " << dims[i].getName() << ", ";
+        qes::log::info() << "Dim: " << dims[i].getName() << ", ";
         if (dims[i].isUnlimited())
-            std::cout << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
+            qes::log::info() << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
         else
-            std::cout << dims[i].getSize() << std::endl;
+            qes::log::info() << dims[i].getSize() << std::endl;
         totalDim *= dims[i].getSize();
     }
-    std::cout << "LUIndex att count: " << LUIndexVar.getAttCount() << std::endl;
+    qes::log::info() << "LUIndex att count: " << LUIndexVar.getAttCount() << std::endl;
     std::map<std::string, NcVarAtt> LUIndexVar_attrMap = LUIndexVar.getAtts();
     for (std::map<std::string, NcVarAtt>::const_iterator ci=LUIndexVar_attrMap.begin();
          ci!=LUIndexVar_attrMap.end(); ++ci) {
-        std::cout << "LUIndex Attr: " << ci->first << std::endl;
+        qes::log::info() << "LUIndex Attr: " << ci->first << std::endl;
     }
 
     // this is a 114 x 114 x 41 x 360 dim array...
@@ -1546,20 +1547,20 @@ void WRFInput::readDomainInfo()
     for (auto l=0; l<subsetDim; l++)
         LUIndexSave[l] = LUIndexData[l];
 
-    std::cout << "first 10 for LUIndex" << std::endl;
+    qes::log::info() << "first 10 for LUIndex" << std::endl;
     for (auto l=0; l<10; l++)
-        std::cout << LUIndexSave[l] << std::endl;
+        qes::log::info() << LUIndexSave[l] << std::endl;
 
-    std::cout << "last 10 for LUIndex" << std::endl;
+    qes::log::info() << "last 10 for LUIndex" << std::endl;
     for (auto l=subsetDim-10-1; l<subsetDim; l++)
-        std::cout << LUIndexSave[l] << std::endl;
+        qes::log::info() << LUIndexSave[l] << std::endl;
 
     delete [] LUIndexData;
 
 //    }catch(NcException& e)
 //     {
 //       e.what();
-//       cout<<"FAILURE*************************************"<<endl;
+//       qes::log::info()<<"FAILURE*************************************"<<endl;
 //       return;
 //     }
 
@@ -1709,23 +1710,23 @@ void WRFInput::readWindData()
 
   // Extraction of the Wind data vertical position
   NcVar phbVar = wrfInputFile.getVar("PHB");
-  std::cout << "PHB dim count: " << phbVar.getDimCount() << std::endl;
+  qes::log::info() << "PHB dim count: " << phbVar.getDimCount() << std::endl;
   std::vector<NcDim> dims = phbVar.getDims();
   long totalDim = 1;
   for (auto i = 0u; i < dims.size(); i++) {
-    std::cout << "Dim: " << dims[i].getName() << ", ";
+    qes::log::info() << "Dim: " << dims[i].getName() << ", ";
     if (dims[i].isUnlimited())
-      std::cout << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
+      qes::log::info() << "Unlimited (" << dims[i].getSize() << ")" << std::endl;
     else
-      std::cout << dims[i].getSize() << std::endl;
+      qes::log::info() << dims[i].getSize() << std::endl;
     totalDim *= dims[i].getSize();
   }
-  std::cout << "PHB att count: " << phbVar.getAttCount() << std::endl;
+  qes::log::info() << "PHB att count: " << phbVar.getAttCount() << std::endl;
   std::map<std::string, NcVarAtt> phbVar_attrMap = phbVar.getAtts();
   for (std::map<std::string, NcVarAtt>::const_iterator ci = phbVar_attrMap.begin();
        ci != phbVar_attrMap.end();
        ++ci) {
-    std::cout << "PHB Attr: " << ci->first << std::endl;
+    qes::log::info() << "PHB Attr: " << ci->first << std::endl;
   }
 
 
@@ -1739,7 +1740,7 @@ void WRFInput::readWindData()
     int yDim = dims[2].getSize();
     int xDim = dims[3].getSize();
 
-    std::cout << "PHB Dims: t=" << timeDim << "< z=" << zDim << ", y=" << yDim << ", x=" << xDim << std::endl;
+    qes::log::info() << "PHB Dims: t=" << timeDim << "< z=" << zDim << ", y=" << yDim << ", x=" << xDim << std::endl;
     double* allPHBData = new double[ timeDim * zDim * yDim * xDim ];
     phbVar.getVar( allPHBData );
 
@@ -1790,11 +1791,11 @@ void WRFInput::readWindData()
 
   std::vector<NcDim> ustagg_dims = uStaggered.getDims();
   for (auto i = 0u; i < ustagg_dims.size(); i++) {
-    std::cout << "Dim: " << ustagg_dims[i].getName() << ", ";
+    qes::log::info() << "Dim: " << ustagg_dims[i].getName() << ", ";
     if (ustagg_dims[i].isUnlimited())
-      std::cout << "Unlimited (" << ustagg_dims[i].getSize() << ")" << std::endl;
+      qes::log::info() << "Unlimited (" << ustagg_dims[i].getSize() << ")" << std::endl;
     else
-      std::cout << ustagg_dims[i].getSize() << std::endl;
+      qes::log::info() << ustagg_dims[i].getSize() << std::endl;
   }
 
   // time, Z, Y, X is order
@@ -1944,7 +1945,7 @@ SimData.WS = permute(SimData.WS,[2 1 3 4]);
 SimData.CoordZ = permute(SimData.CoordZ,[2 1 3 4]);
 #endif
 
-  std::cout << "Smoothing domain" << std::endl;
+  qes::log::info() << "Smoothing domain" << std::endl;
 
   // Updating dimensions
   int nx2 = floor(sqrt(m_maxTerrainSize * nx / (float)ny));
@@ -1955,7 +1956,7 @@ SimData.CoordZ = permute(SimData.CoordZ,[2 1 3 4]);
   m_dx = m_dx * nx / (float)nx2;
   m_dy = m_dy * ny / (float)ny2;
 
-  std::cout << "Resizing from " << nx << " by " << ny << " to " << nx2 << " by " << ny2 << std::endl;
+  qes::log::info() << "Resizing from " << nx << " by " << ny << " to " << nx2 << " by " << ny2 << std::endl;
 
   // Terrain
   // SimData.Relief = imresize(SimData.Relief,[ny2,nx2]);
@@ -2060,20 +2061,20 @@ fprintf('%i %s %g %s %g %s\n',SimData.NbStat,' WRF data points have been generat
 
 void WRFInput::dumpWRFDataArray(const std::string &name, double *data, int dimT, int dimZ, int dimY, int dimX)
 {
-  std::cout << "[" << name << "] WRF Data Dump" << std::endl
+  qes::log::info() << "[" << name << "] WRF Data Dump" << std::endl
             << "==========================" << std::endl;
 
   // This output is analagous to Matlab's Columns 1 through dimY style of output
   for (auto t = 0; t < dimT; t++) {
     for (auto z = 0; z < dimZ; z++) {
-      std::cout << "Slice: (t=" << t << ", z=" << z << ")" << std::endl;
+      qes::log::info() << "Slice: (t=" << t << ", z=" << z << ")" << std::endl;
       for (auto x = 0; x < dimX; x++) {
         for (auto y = 0; y < dimY; y++) {
 
           auto idx = t * (dimZ * dimY * dimX) + z * (dimY * dimX) + y * (dimX) + x;
-          std::cout << data[idx] << ' ';
+          qes::log::info() << data[idx] << ' ';
         }
-        std::cout << std::endl;
+        qes::log::info() << std::endl;
       }
     }
   }
@@ -2088,7 +2089,7 @@ void WRFInput::smoothDomain()
   // must not change the categories values.
 
 #if 0
-    std::cout << "Smoothing domain" << std::endl;
+    qes::log::info() << "Smoothing domain" << std::endl;
 
     // Updating dimensions
     int nx2 = floor(sqrt(m_maxTerrainSize * nx/(float)ny));
@@ -2232,7 +2233,7 @@ void WRFInput::updateFromWRF()
     //
     // check for next frame info
     //
-    std::cout << "Waiting for next frame: " << nextWRFFrameNum << std::endl;
+    qes::log::info() << "Waiting for next frame: " << nextWRFFrameNum << std::endl;
 
     NcDim fmwdim = wrfInputFile.getVar("U0_FMW").getDim(0);
     int fmwTimeSize = fmwdim.getSize();
@@ -2246,7 +2247,7 @@ void WRFInput::updateFromWRF()
     int wrfFRAME0_FMW = -1;
     wrfInputFile.getVar("FRAME0_FMW").getVar(fmw_StartIdx, fmw_counts, &wrfFRAME0_FMW);
     while (wrfFRAME0_FMW != nextWRFFrameNum && (numWait < maxWait)) {
-      std::cout << "Waiting for FRAME0_FMW to be ====> " << nextWRFFrameNum << ", received " << wrfFRAME0_FMW << std::endl;
+      qes::log::info() << "Waiting for FRAME0_FMW to be ====> " << nextWRFFrameNum << ", received " << wrfFRAME0_FMW << std::endl;
 
       // close file
       wrfInputFile.close();
@@ -2262,25 +2263,25 @@ void WRFInput::updateFromWRF()
     }
 
     if ((numWait == maxWait) || (wrfFRAME0_FMW < 0))
-      exit(EXIT_FAILURE);
+      throw qes::RuntimeError("QES failure in WRFInput.cpp");
 
-    std::cout << "WRF-QES Coupling: Frame = " << wrfFRAME0_FMW << std::endl;
+    qes::log::info() << "WRF-QES Coupling: Frame = " << wrfFRAME0_FMW << std::endl;
 
     // set the current WRF FRAME0 Num
     currWRFFRAME0Num = wrfFRAME0_FMW;
 
-    std::cout << "Reading and processing WRF Stations for input wind profiles..." << std::endl;
+    qes::log::info() << "Reading and processing WRF Stations for input wind profiles..." << std::endl;
 
-    std::cout << "Dim Count: " << wrfInputFile.getVar("U0_FMW").getDimCount() << std::endl;
+    qes::log::info() << "Dim Count: " << wrfInputFile.getVar("U0_FMW").getDimCount() << std::endl;
     for (auto dIdx = 0u; dIdx < wrfInputFile.getVar("U0_FMW").getDimCount(); dIdx++) {
       NcDim dim = wrfInputFile.getVar("U0_FMW").getDim(dIdx);
-      std::cout << "Dim " << dIdx << ", Size=" << dim.getSize() << std::endl;
+      qes::log::info() << "Dim " << dIdx << ", Size=" << dim.getSize() << std::endl;
     }
 
     // Extract time dim size
     NcDim dim = wrfInputFile.getVar("U0_FMW").getDim(0);
     int timeSize = dim.getSize();
-    std::cout << "Number of time series:  " << timeSize << std::endl;
+    qes::log::info() << "Number of time series:  " << timeSize << std::endl;
 
     // Extract height dim size
     dim = wrfInputFile.getVar("U0_FMW").getDim(1);
@@ -2311,13 +2312,13 @@ void WRFInput::updateFromWRF()
 
     int wrfCHSUM0_FMW = 0;
     wrfInputFile.getVar("CHSUM0_FMW").getVar(chksum_StartIdx, chksum_counts, &wrfCHSUM0_FMW);
-    std::cout << "WRF CHSUM0_FMW = " << wrfCHSUM0_FMW << std::endl;
+    qes::log::info() << "WRF CHSUM0_FMW = " << wrfCHSUM0_FMW << std::endl;
 
     int chkSum = 0;
     chkSum = checksum(chkSum, u0_fmw);
     chkSum = checksum(chkSum, v0_fmw);
     chkSum = checksum(chkSum, w0_fmw);
-    std::cout << "WRF file output checksum of FMW fields: " << chkSum << std::endl;
+    qes::log::info() << "WRF file output checksum of FMW fields: " << chkSum << std::endl;
 
     // Read the heights
     std::vector<size_t> interpWindsHT_StartIdx = { static_cast<unsigned long>(timeSize - 1), 0, 0, 0 };
@@ -2327,7 +2328,7 @@ void WRFInput::updateFromWRF()
     wrfInputFile.getVar("HT_FMW").getVar(interpWindsHT_StartIdx, interpWindsHT_counts, ht_fmw.data());
   }
 
-  std::cout << "Finalized update from WRF." << std::endl;
+  qes::log::info() << "Finalized update from WRF." << std::endl;
 }
 
 
@@ -2342,9 +2343,9 @@ void WRFInput::extractWind(WINDSGeneralData *wgd)
   auto [nx, ny, nz] = wgd->domain.getDomainCellNum();
   auto [dx, dy, dz] = wgd->domain.getDomainSize();
 
-  std::cout << "QES Extracting fire height wind field into WRF UF and VF" << std::endl;
-  std::cout << "fm_nx=" << fm_nx << ", wgd nx=" << nx << ", haloX=" << m_haloX_DimAddition << "( " << std::endl;
-  std::cout << "fm_ny=" << fm_ny << ", wgd ny=" << ny << ", haloY=" << m_haloY_DimAddition << std::endl;
+  qes::log::info() << "QES Extracting fire height wind field into WRF UF and VF" << std::endl;
+  qes::log::info() << "fm_nx=" << fm_nx << ", wgd nx=" << nx << ", haloX=" << m_haloX_DimAddition << "( " << std::endl;
+  qes::log::info() << "fm_ny=" << fm_ny << ", wgd ny=" << ny << ", haloY=" << m_haloY_DimAddition << std::endl;
 
   // why?
   // assert( fm_nx != (nx - 1 - 2*m_haloX_DimAddition) );
@@ -2358,8 +2359,8 @@ void WRFInput::extractWind(WINDSGeneralData *wgd)
   auto FWH = 6.09;
 
   if (FWH <= dz) {
-    std::cout << "Warning: resolution in z-direction is not fine enough to define above ground cells for calculating wind" << std::endl;
-    std::cout << "Try running the model with finer resolution in z-direction" << std::endl;
+    qes::log::warning() << "Warning: resolution in z-direction is not fine enough to define above ground cells for calculating wind" << std::endl;
+    qes::log::info() << "Try running the model with finer resolution in z-direction" << std::endl;
   }
 
   // For all X, Y in the fire mesh space, extract terrain height and
@@ -2419,7 +2420,7 @@ void WRFInput::extractWind(WINDSGeneralData *wgd)
   int ufvf_chsum = 0;
   ufvf_chsum = checksum(ufvf_chsum, ufOut);
   ufvf_chsum = checksum(ufvf_chsum, vfOut);
-  std::cout << "WRF UF/VF output checksum: " << ufvf_chsum << std::endl;
+  qes::log::info() << "WRF UF/VF output checksum: " << ufvf_chsum << std::endl;
 
   NcVar field_UF = wrfInputFile.getVar("UF");
   NcVar field_VF = wrfInputFile.getVar("VF");
@@ -2443,13 +2444,13 @@ void WRFInput::extractWind(WINDSGeneralData *wgd)
   // Need to output the wrfFRAME0 back to the FRAME_FMW
   field_FRAME.putVar(chksum_StartIdx, chksum_counts, &currWRFFRAME0Num);
 
-  std::cout << "\tChecksum and frame updated!" << std::endl;
+  qes::log::info() << "\tChecksum and frame updated!" << std::endl;
 
   wrfInputFile.sync();
-  std::cout << "Wind field data written to WRF Output file: " << m_WRFFilename << std::endl;
+  qes::log::info() << "Wind field data written to WRF Output file: " << m_WRFFilename << std::endl;
 
   nextWRFFrameNum = currWRFFRAME0Num + 1;
-  std::cout << "curr frame was " << currWRFFRAME0Num << ", now waiting for " << nextWRFFrameNum << std::endl;
+  qes::log::info() << "curr frame was " << currWRFFRAME0Num << ", now waiting for " << nextWRFFrameNum << std::endl;
 }
 
 

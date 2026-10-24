@@ -34,6 +34,8 @@
  * @sa LocalMixing
  */
 
+
+#include "util/QESLog.h"
 #include "PolyBuilding.h"
 
 // These take care of the circular reference
@@ -110,20 +112,20 @@ void PolyBuilding::NonLocalMixing(WINDSGeneralData *WGD, TURBGeneralData *TGD, i
 
   if (xi.size() == 0) {
     // exit if building has no area (computed in polygonWake.cpp)
-    std::cout << "[WARNING] building ill-defined (no area) -> use local mixing (building id=" << building_id << ")" << std::endl;
+    qes::log::warning() << "[WARNING] building ill-defined (no area) -> use local mixing (building id=" << building_id << ")" << std::endl;
     return;
   }
   if (k_start < 1 || k_start > nz - 2 || k_end < 1 || k_end > nz - 2) {
     // exit if building start/end point is ill-defined (computed in polygonWake.cpp)
-    std::cout << "[WARNING] building ill-defined (k out of bound) -> use local mixing (building id=" << building_id << ")" << std::endl;
+    qes::log::warning() << "[WARNING] building ill-defined (k out of bound) -> use local mixing (building id=" << building_id << ")" << std::endl;
     return;
   }
   /*
   if ( height_eff >= WGD->domain.z[nz-1] ) {
-      std::cout << "domain = "<< WGD->domain.z[0] << " " << WGD->domain.z[nz-2] << " " << WGD->domain.z[nz-1] << std::endl;
-      std::cout << "buidling = "<< base_height << " " << height_eff << std::endl;
+      qes::log::info() << "domain = "<< WGD->domain.z[0] << " " << WGD->domain.z[nz-2] << " " << WGD->domain.z[nz-1] << std::endl;
+      qes::log::info() << "buidling = "<< base_height << " " << height_eff << std::endl;
       // exit if building above top domain is ill-defined (computed in polygonWake.cpp)
-      std::cout<< "[WARNING] building ill-defined -> use local mixing (building id="<< building_id << ")" <<std::endl;
+      qes::log::warning()<< "[WARNING] building ill-defined -> use local mixing (building id="<< building_id << ")" <<std::endl;
       return;
       }
   */
@@ -301,7 +303,7 @@ void PolyBuilding::NonLocalMixing(WINDSGeneralData *WGD, TURBGeneralData *TGD, i
   int j_ref_r = floor(y_ref_r / dy);
 
   if (i_ref_r >= nx - 2 && i_ref_r <= 0 && j_ref_r >= ny - 2 && j_ref_r <= 0) {
-    std::cout << "[WARNING] right ref point outside domain -> use local mixing (building id=" << building_id << ")" << std::endl;
+    qes::log::warning() << "[WARNING] right ref point outside domain -> use local mixing (building id=" << building_id << ")" << std::endl;
     return;
   }
   for (auto k = k_top + 1; k >= k_bottom; k--) {
@@ -322,7 +324,7 @@ void PolyBuilding::NonLocalMixing(WINDSGeneralData *WGD, TURBGeneralData *TGD, i
   int j_ref_l = floor(y_ref_l / dy);
 
   if (i_ref_l >= nx - 2 && i_ref_l <= 0 && j_ref_l >= ny - 2 && j_ref_l <= 0) {
-    std::cout << "[WARNING] left ref point outside domain -> use local mixing (building id=" << building_id << ")" << std::endl;
+    qes::log::warning() << "[WARNING] left ref point outside domain -> use local mixing (building id=" << building_id << ")" << std::endl;
     return;
   }
   for (auto k = k_top + 1; k >= k_bottom; k--) {
@@ -331,7 +333,7 @@ void PolyBuilding::NonLocalMixing(WINDSGeneralData *WGD, TURBGeneralData *TGD, i
   }
 
 
-  // std::cout << "buidling id" << building_id << " k_start=" << k_start << " k_end=" << k_end << " kk=" << kk << std::endl;
+  // qes::log::info() << "buidling id" << building_id << " k_start=" << k_start << " k_end=" << k_end << " kk=" << kk << std::endl;
 
   for (auto k = k_top; k >= k_bottom; k--) {
     z_build = WGD->domain.z[k] - base_height;
@@ -610,7 +612,7 @@ void PolyBuilding::NonLocalMixing(WINDSGeneralData *WGD, TURBGeneralData *TGD, i
     }
   }
   if (count_cl_outofbound > 0) {
-    std::cout << "[WARNING] " << count_cl_outofbound << " points of the centerline outside of domain "
+    qes::log::warning() << "[WARNING] " << count_cl_outofbound << " points of the centerline outside of domain "
               << "(building id=" << building_id << ")" << std::endl;
   }
 

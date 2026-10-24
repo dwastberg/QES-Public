@@ -34,6 +34,8 @@
  * cell center data (used primarily for visualization)
  */
 
+
+#include "util/QESLog.h"
 #include "WINDSOutputVisualization.h"
 
 WINDSOutputVisualization::WINDSOutputVisualization(WINDSGeneralData *WGD,
@@ -41,7 +43,7 @@ WINDSOutputVisualization::WINDSOutputVisualization(WINDSGeneralData *WGD,
                                                    const std::string &output_file)
   : QESNetCDFOutput(output_file)
 {
-  std::cout << "[QES-WINDS] \t Getting output fields for visualisation file" << std::endl;
+  qes::log::info() << "[QES-WINDS] \t Getting output fields for visualisation file" << std::endl;
 
   std::vector<std::string> fileOP = WID->fileOptions->outputFields;
 

@@ -30,6 +30,8 @@
 
 /** @file CanopyWindbreak.cpp */
 
+
+#include "util/QESLog.h"
 #include "CanopyWindbreak.h"
 
 #include "WINDSInputData.h"
@@ -150,13 +152,11 @@ void CanopyWindbreak::setCellFlags(const WINDSInputData *WID, WINDSGeneralData *
 
   // check of illegal definition.
   if (k_start > k_end) {
-    std::cerr << "ERROR in tree definition (k_start > k end)" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR in tree definition (k_start > k end)" << std::endl; throw qes::InputError(message.str()); }
   }
 
   if (ceil(1.5 * k_end) > nz - 1) {
-    std::cerr << "ERROR domain too short for tree method" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR domain too short for tree method" << std::endl; throw qes::InputError(message.str()); }
   }
 
   return;

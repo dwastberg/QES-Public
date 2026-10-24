@@ -33,12 +33,14 @@
  * @brief :document this:
  */
 
+
+#include "util/QESLog.h"
 #include "TURBOutput.h"
 
 TURBOutput::TURBOutput(TURBGeneralData *tgd, std::string output_file)
   : QESNetCDFOutput(output_file)
 {
-  std::cout << "[QES-TURB] \t Setting output fields for turbulence data" << std::endl;
+  qes::log::info() << "[QES-TURB] \t Setting output fields for turbulence data" << std::endl;
 
   // set list of fields to save, no option available for this file
   output_fields = all_output_fields;

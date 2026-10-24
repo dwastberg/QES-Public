@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include "util/ParseInterface.h"
 #include "PolyBuilding.h"
 
@@ -39,10 +41,9 @@
 #include <cmath>
 
 using namespace std;
-using std::cerr;
+
 using std::endl;
 using std::vector;
-using std::cout;
 
 /**
  * @class RectangularBuilding

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <string>
 #include "QESFeatures.h"
 #include "UnsupportedFeature.h"
@@ -69,6 +71,7 @@ protected:
   void setParents(std::string s) { treeParents = s; }
 
 public:
+  virtual ~ParseInterface() = default;
   /**
    * This function parses the current node of the tree and searches for an element
    * with the tag of "tag". Once it is found, it returns the value.
@@ -347,8 +350,7 @@ inline void ParseInterface::parseXML(const std::string fileName, const std::stri
   try {
     pt::read_xml(fileName, t);
   } catch (boost::property_tree::xml_parser::xml_parser_error &e) {
-    std::cerr << "Error reading tree in " << fileName << "\n";
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "Error reading tree in " << fileName << "\n"; throw qes::InputError(message.str()); }
   }
 
 

@@ -28,6 +28,8 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+
+#include "util/QESLog.h"
 #include "CanopyElement.h"
 
 #include "WINDSInputData.h"
@@ -79,11 +81,10 @@ void CanopyElement::setPolyBuilding(WINDSGeneralData *WGD)
   j_end = y_max / dy + 1;// Index of canopy start location in y-direction
 
   if (i_start < 0 || i_end >= nx - 1 || j_start < 0 || j_end >= ny - 1) {
-    std::cerr << "==============================================================" << std::endl;
-    std::cerr << "[ERROR] canopy element out of bound" << std::endl;
-    std::cout << "x value (min,man) (indeces) (" << x_min << "," << x_max << ") (" << i_start << "," << i_end << ")" << std::endl;
-    std::cout << "y value (min,man) (indeces) (" << y_min << "," << y_max << ") (" << j_start << "," << j_end << ")" << std::endl;
-    exit(EXIT_FAILURE);
+    qes::log::error() << "==============================================================" << std::endl;
+    qes::log::error() << "[ERROR] canopy element out of bound" << std::endl;
+    qes::log::info() << "x value (min,man) (indeces) (" << x_min << "," << x_max << ") (" << i_start << "," << i_end << ")" << std::endl;
+    { std::ostringstream message; message << "y value (min,man) (indeces) (" << y_min << "," << y_max << ") (" << j_start << "," << j_end << ")" << std::endl; throw qes::InputError(message.str()); }
   }
 
   return;
@@ -95,8 +96,7 @@ void CanopyElement::setCanopyGrid(WINDSGeneralData *WGD, int building_number)
   unsigned int num_crossing, vert_id, start_poly;
 
 #if 1
-  std::cerr << "THIS FUNCTION IS OBSOLETE" << std::endl;
-  exit(EXIT_FAILURE);
+  { std::ostringstream message; message << "THIS FUNCTION IS OBSOLETE" << std::endl; throw qes::UnsupportedFeature(message.str()); }
 #else
 
   // Loop to calculate maximum and minimum of x and y values of the building
@@ -307,8 +307,7 @@ void CanopyElement::canopyCioncoParam(WINDSGeneralData *WGD)
 {
 
 #if 1
-  std::cerr << "THIS FUNCTION IS OBSOLETE" << std::endl;
-  exit(EXIT_FAILURE);
+  { std::ostringstream message; message << "THIS FUNCTION IS OBSOLETE" << std::endl; throw qes::UnsupportedFeature(message.str()); }
 #else
 
   float avg_atten; /**< average attenuation of the canopy */
@@ -332,10 +331,10 @@ void CanopyElement::canopyCioncoParam(WINDSGeneralData *WGD)
                                              canopy_atten[icell_3d],
                                              WGD->vk,
                                              0.0);
-        // std::cout << "WGD->vk:" << WGD->vk << "\n";
-        // std::cout << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
+        // qes::log::info() << "WGD->vk:" << WGD->vk << "\n";
+        // qes::log::info() << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
         if (canopy_d[icell_2d] == 10000) {
-          std::cout << "bisection failed to converge"
+          qes::log::info() << "bisection failed to converge"
                     << "\n";
           canopy_d[icell_2d] = canopySlopeMatch(canopy_z0[icell_2d],
                                                 canopy_height[icell_2d],

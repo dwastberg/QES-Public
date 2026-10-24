@@ -37,6 +37,8 @@
  * @sa TimeSeries
  */
 
+
+#include "util/QESLog.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -53,7 +55,7 @@
 
 void WindProfilerWRF::interpolateWindProfile(const WINDSInputData *WID, WINDSGeneralData *WGD)
 {
-  std::cout << "Processing WRF u0_fmw, v0_fmw and w0_fmw into initial QES wind fields." << std::endl;
+  qes::log::info() << "Processing WRF u0_fmw, v0_fmw and w0_fmw into initial QES wind fields." << std::endl;
 
   /* Need linear interoplation because
      WGD->u0 and WGD->v0 are on faces (size nx*ny*nz)
@@ -206,7 +208,7 @@ void WindProfilerWRF::interpolateWindProfile(const WINDSInputData *WID, WINDSGen
 
   auto finish = std::chrono::high_resolution_clock::now();
   std::chrono::duration<float> elapsed = finish - start;
-  // std::cout << "Elapsed time for Barnes interpolation on CPU: " << elapsed.count() << " s\n";
+  // qes::log::info() << "Elapsed time for Barnes interpolation on CPU: " << elapsed.count() << " s\n";
 
   return;
 }

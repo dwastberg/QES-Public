@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <math.h>
@@ -45,10 +47,9 @@ class PolyBuilding;
 
 
 using namespace std;
-using std::cerr;
+
 using std::endl;
 using std::vector;
-using std::cout;
 
 #define MIN_S(x, y) ((x) < (y) ? (x) : (y))
 

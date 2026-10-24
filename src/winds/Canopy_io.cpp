@@ -28,6 +28,8 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+
+#include "util/QESLog.h"
 #include "Canopy.h"
 #include "WINDSGeneralData.h"
 #include "util/ESRIShapefile.h"
@@ -35,7 +37,7 @@
 void Canopy::initializeShapefileCanopies(const WINDSInputData *WID, WINDSGeneralData *WGD)
 {
 
-    std::cout << "Creating canopies from shapefile..." << std::flush;
+    qes::log::info() << "Creating canopies from shapefile..." << std::flush;
 
     std::vector<Building *> poly_buildings;
     // FM CLEANUP - NOT USED
@@ -44,7 +46,7 @@ void Canopy::initializeShapefileCanopies(const WINDSInputData *WID, WINDSGeneral
     WID->vegetationParams->SHPData->getLocalDomain(shpDomainSize);
     WID->vegetationParams->SHPData->getMinExtent(minExtent);
 
-    // printf("\tShapefile Origin = (%.6f,%.6f)\n", minExtent[0], minExtent[1]);
+    // qes::log::writef(qes::log::Level::info, "\tShapefile Origin = (%.6f,%.6f)\n", minExtent[0], minExtent[1]);
 
     // If the shapefile is not covering the whole domain or the UTM coordinates
     // of the QES domain is different than shapefile origin
@@ -63,7 +65,7 @@ void Canopy::initializeShapefileCanopies(const WINDSInputData *WID, WINDSGeneral
 
       // Setting base height for tree if there is a DEM file (TODO)
       if (WID->simParams->DTE_heightField && WID->simParams->DTE_mesh) {
-        std::cerr << "Isolated tree from shapefile and DEM not implemented...\n";
+        qes::log::error() << "Isolated tree from shapefile and DEM not implemented...\n";
       } else {
         // base_height.push_back(0.0);
       }
@@ -87,5 +89,5 @@ void Canopy::initializeShapefileCanopies(const WINDSInputData *WID, WINDSGeneral
       allCanopiesV[cId]->setCellFlags(WID, WGD, cId);
       effective_height.push_back(allCanopiesV[cId]->height_eff);
     }
-    std::cout << "[done]" << std::endl;
+    qes::log::info() << "[done]" << std::endl;
   }

@@ -37,6 +37,8 @@
  * @sa TimeSeries
  */
 
+
+#include "util/QESLog.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -146,11 +148,11 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
     }
 #endif
   } else {
-    std::cout << "Warning!!!! There is no available data for sensor at this timestep" << std::endl;
+    qes::log::warning() << "Warning!!!! There is no available data for sensor at this timestep" << std::endl;
     return;
   }
 
-  // std::cout << "Number of sensors with available data:  " << available_sensor_id.size() << std::endl;
+  // qes::log::info() << "Number of sensors with available data:  " << available_sensor_id.size() << std::endl;
 
   u_prof.clear();
   u_prof.resize(num_sites * nz, 0.0);
@@ -609,7 +611,7 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
 #endif
   }
 
-  // std::cout << "Sensor profiles are created" << std::endl;
+  // qes::log::info() << "Sensor profiles are created" << std::endl;
 
   return;
 }

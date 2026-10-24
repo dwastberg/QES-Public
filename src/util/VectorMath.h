@@ -34,6 +34,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
@@ -244,7 +246,7 @@ inline void VectorMath::makeRealizable(const float &invarianceTol, mat3sym &tau)
   }
 
   if (iter == 999) {
-    std::cout << "WARNING (Plume::makeRealizable): unable to make stress tensor realizable." << std::endl;
+    qes::log::warning() << "WARNING (Plume::makeRealizable): unable to make stress tensor realizable." << std::endl;
   }
 
   // now set the output actual stress tensor using the separate temporary stress

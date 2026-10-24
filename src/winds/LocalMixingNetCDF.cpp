@@ -34,6 +34,8 @@
  * @sa LocalMixing
  */
 
+
+#include "util/QESLog.h"
 #include "LocalMixingNetCDF.h"
 #include "util/NetCDFInput.h"
 
@@ -55,8 +57,7 @@ void LocalMixingNetCDF::defineMixingLength(const WINDSInputData *WID, WINDSGener
   mixLengthInput->getDimensionSize("z", nz_f);
 
   if (nx_f != WGD->domain.nx() - 1 || ny_f != WGD->domain.ny() - 1 || nz_f != WGD->domain.nz() - 1) {
-    std::cout << "[ERROR] \t domain size error in " << WID->turbParams->filename << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "[ERROR] \t domain size error in " << WID->turbParams->filename << std::endl; throw qes::InputError(message.str()); }
   }
 
   // access variable (to check if exist)
@@ -75,8 +76,7 @@ void LocalMixingNetCDF::defineMixingLength(const WINDSInputData *WID, WINDSGener
     // read in mixilength
     mixLengthInput->getVariableData(WID->turbParams->varname, start, count, WGD->mixingLengths);
   } else {
-    std::cout << "[ERROR] \t no field " << WID->turbParams->varname << " in "
-              << WID->turbParams->filename << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "[ERROR] \t no field " << WID->turbParams->varname << " in "
+              << WID->turbParams->filename << std::endl; throw qes::InputError(message.str()); }
   }
 }

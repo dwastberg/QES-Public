@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <cmath>
 #include <cfloat>
 #include <random>
@@ -161,12 +163,12 @@ public:
     nextList[numDV + 3] = Vector3Float(0, -1, 0);// right
     nextList[numDV + 4] = Vector3Float(0, 0, -1);// bottom
 
-    //        std::cout << "Generated " << nextList.size() << " sphere directions." << std::endl;
-    //        std::cout << "sd = [" << std::endl;
+    //        qes::log::info() << "Generated " << nextList.size() << " sphere directions." << std::endl;
+    //        qes::log::info() << "sd = [" << std::endl;
     //        for (int i=0; i<nextList.size(); i++) {
-    //            std::cout << "\t" << nextList[i][0] << " " << nextList[i][1] << " " << nextList[i][2] << ";" << std::endl;
+    //            qes::log::info() << "\t" << nextList[i][0] << " " << nextList[i][1] << " " << nextList[i][2] << ";" << std::endl;
     //        }
-    //        std::cout << "];" << std::endl;
+    //        qes::log::info() << "];" << std::endl;
   }
 
 

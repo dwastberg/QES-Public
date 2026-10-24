@@ -38,6 +38,8 @@
  *   - The methods allow to be type generic (as long as the data is either int, float, or double)
  */
 
+
+#include "util/QESLog.h"
 #include "QESNetCDFOutput.h"
 
 QESNetCDFOutput::QESNetCDFOutput(std::string output_file)
@@ -73,8 +75,7 @@ bool QESNetCDFOutput::validateFileOptions()
 {
 
   if (all_output_fields.size() == 0) {
-    std::cerr << "[QES-output] ERROR all output fields undefine -> cannot validate file options" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "[QES-output] ERROR all output fields undefine -> cannot validate file options" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // check if all fileOptions->outputFields are possible
@@ -105,8 +106,7 @@ void QESNetCDFOutput::createDimension(const std::string &name,
     saveField2D(name, *data);
     output_dimensions.insert({ name, ncDim });
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // -> float
@@ -123,8 +123,7 @@ void QESNetCDFOutput::createDimension(const std::string &name,
     saveField2D(name, *data);
     output_dimensions.insert({ name, ncDim });
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // -> double
@@ -142,8 +141,7 @@ void QESNetCDFOutput::createDimension(const std::string &name,
     output_dimensions.insert({ name, ncDim });
     // set_all_output_fields.insert(name);
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // sets of dimension
@@ -156,14 +154,12 @@ void QESNetCDFOutput::createDimensionSet(const std::string &name,
       if (output_dimensions.find(s) != output_dimensions.end()) {
         dim_vect.push_back(output_dimensions[s]);
       } else {
-        std::cerr << "[ERROR] Dimension does not exits" << std::endl;
-        exit(1);
+        { std::ostringstream message; message << "[ERROR] Dimension does not exits" << std::endl; throw qes::InputError(message.str()); }
       }
     }
     output_dimension_sets.insert({ name, dim_vect });
   } else {
-    std::cerr << "[ERROR] Set of dimensions already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 
@@ -366,7 +362,7 @@ void QESNetCDFOutput::addOutputFields()
       // vector char
       output_vector_char.push_back(map_att_vector_char[key]);
     } else {
-      std::cerr << "[WARNING] field " << key << " not defined (excluding dimensions)" << std::endl;
+      qes::log::warning() << "[WARNING] field " << key << " not defined (excluding dimensions)" << std::endl;
     }
   }
 
@@ -423,10 +419,9 @@ void QESNetCDFOutput::addOutputFields(const std::set<std::string> &new_fields)
                       std::inserter(result, result.end()));
 
   if (!result.empty()) {
-    std::cerr << "[ERROR] Fields ";
-    for (const std::string &r : result) { std::cerr << r << " "; }
-    std::cerr << "not defined" << std::endl;
-    exit(1);
+    qes::log::error() << "[ERROR] Fields ";
+    for (const std::string &r : result) { qes::log::error() << r << " "; }
+    { std::ostringstream message; message << "not defined" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // create list of fields to save base on output_fields
@@ -625,7 +620,7 @@ void QESNetCDFOutput::saveOutputFields()
 
 
   size_t output_counter = fields["t"].getDim(0).getSize();
-  //  std::cout << "[TEST OUTPUT] " << fields["t"].getDim(0).getSize() << std::endl;
+  //  qes::log::info() << "[TEST OUTPUT] " << fields["t"].getDim(0).getSize() << std::endl;
 
   if (output_counter == 0 && !flagStartTimeSet) {
     setStartTime(timeCurrent);

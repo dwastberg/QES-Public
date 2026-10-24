@@ -34,6 +34,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -67,7 +69,7 @@ public:
 
   void show()
   {
-    std::cout << "Elapsed time for " << name.append(25 - name.length(), ' ') << elapsed.count() << " s\n";
+    qes::log::info() << "Elapsed time for " << name.append(25 - name.length(), ' ') << elapsed.count() << " s\n";
   }
 
 private:

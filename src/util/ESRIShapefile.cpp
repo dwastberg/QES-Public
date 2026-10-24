@@ -37,6 +37,8 @@
  * @sa PolyVertex
  */
 
+
+#include "util/QESLog.h"
 #include <iostream>
 #include "ESRIShapefile.h"
 
@@ -78,8 +80,8 @@ ESRIShapefile::ESRIShapefile(const std::string &filename,
 ESRIShapefile::ESRIShapefile(const std::string &filename, const std::string &bldLayerName)
   : m_filename(filename), m_layerName(bldLayerName), minBound(2), maxBound(2)
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[ESRIShapefile]\t Initialization of shapefile reader..." << std::endl;
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[ESRIShapefile]\t Initialization of shapefile reader..." << std::endl;
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -91,11 +93,10 @@ ESRIShapefile::ESRIShapefile(const std::string &filename, const std::string &bld
   // From -- http://www.gdal.org/gdal_tutorial.html
   m_poDS = (GDALDataset *)GDALOpenEx(m_filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
   if (m_poDS == nullptr) {
-    std::cerr << "ESRIShapefile -- could not open data file: " << m_filename << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ESRIShapefile -- could not open data file: " << m_filename << std::endl; throw qes::InputError(message.str()); }
   } else {
-    std::cout << "Reading ESRIShapefile: " << m_filename << std::endl;
-    printf("SHP File Driver: %s/%s\n",
+    qes::log::info() << "Reading ESRIShapefile: " << m_filename << std::endl;
+    qes::log::writef(qes::log::Level::info, "SHP File Driver: %s/%s\n",
            m_poDS->GetDriver()->GetDescription(),
            m_poDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
 
@@ -107,13 +108,13 @@ ESRIShapefile::ESRIShapefile(const std::string &filename, const std::string &bld
 
     loadVectorData(m_polygons, m_features);
   }
-  std::cout << "Bounds of SHP: Min=(" << minBound[0] << ", " << minBound[1] << "), Max=(" << maxBound[0] << ", " << maxBound[1] << ")" << std::endl;
-  std::cout << "Domain Size: " << (int)ceil(maxBound[0] - minBound[0]) << " X " << (int)ceil(maxBound[1] - minBound[1]) << std::endl;
-  std::cout << "[ESRIShapefile]\t Loading completed." << std::endl;
+  qes::log::info() << "Bounds of SHP: Min=(" << minBound[0] << ", " << minBound[1] << "), Max=(" << maxBound[0] << ", " << maxBound[1] << ")" << std::endl;
+  qes::log::info() << "Domain Size: " << (int)ceil(maxBound[0] - minBound[0]) << " X " << (int)ceil(maxBound[1] - minBound[1]) << std::endl;
+  qes::log::info() << "[ESRIShapefile]\t Loading completed." << std::endl;
 
   auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsed_cut = finish - start;
-  std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+  qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
 }
 
 #if 0
@@ -124,11 +125,10 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
   // From -- http://www.gdal.org/gdal_tutorial.html
   m_poDS = (GDALDataset *)GDALOpenEx(m_filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
   if (m_poDS == nullptr) {
-    std::cerr << "ESRIShapefile -- could not open data file: " << m_filename << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ESRIShapefile -- could not open data file: " << m_filename << std::endl; throw qes::InputError(message.str()); }
   }
 
-  printf("SHP File Driver: %s/%s\n",
+  qes::log::writef(qes::log::Level::info, "SHP File Driver: %s/%s\n",
          m_poDS->GetDriver()->GetDescription(),
          m_poDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
 
@@ -136,12 +136,12 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
   // poLayer = poDS->GetLayerByName( "point" );
 
   int numLayers = m_poDS->GetLayerCount();
-  std::cout << "Number of Layers: " << numLayers << std::endl;
+  qes::log::info() << "Number of Layers: " << numLayers << std::endl;
 
   // Dump the layers for now
   for (auto i = 0; i < numLayers; i++) {
     OGRLayer *poLayer = m_poDS->GetLayer(i);
-    std::cout << "\tLayer: " << poLayer->GetName() << std::endl;
+    qes::log::info() << "\tLayer: " << poLayer->GetName() << std::endl;
   }
 
   // just what I set my layer name too -- may need to specify this
@@ -149,8 +149,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
   // Need to extract the layer from the QU XML files....
   OGRLayer *buildingLayer = m_poDS->GetLayerByName(m_layerName.c_str());
   if (buildingLayer == nullptr) {
-    std::cerr << "ESRIShapefile -- no layer" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "ESRIShapefile -- no layer" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // for all features in the building layer
@@ -165,56 +164,56 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
       for (int idxField = 0; idxField < poFDefn->GetFieldCount(); idxField++) {
 
         OGRFieldDefn *oField = poFDefn->GetFieldDefn(idxField);
-        // std::cout << "Field Name: " << oField->GetNameRef() << ", Value: ";
+        // qes::log::info() << "Field Name: " << oField->GetNameRef() << ", Value: ";
         if (strcmp(oField->GetNameRef(), "H") == 0) {
           switch (oField->GetType()) {
           case OFTInteger:
-            // printf( "%d,", feature->GetFieldAsInteger( idxField ) );
+            // qes::log::writef(qes::log::Level::info,  "%d,", feature->GetFieldAsInteger( idxField ) );
             building_height.push_back(feature->GetFieldAsInteger(idxField) * heightFactor);
             break;
           case OFTInteger64:
-            // printf( CPL_FRMT_GIB ",", feature->GetFieldAsInteger64( idxField ));
+            // qes::log::writef(qes::log::Level::info,  CPL_FRMT_GIB ",", feature->GetFieldAsInteger64( idxField ));
             building_height.push_back(feature->GetFieldAsInteger(idxField) * heightFactor);
             break;
           case OFTReal:
-            // printf( "%.3f,", feature->GetFieldAsDouble( idxField ) );
+            // qes::log::writef(qes::log::Level::info,  "%.3f,", feature->GetFieldAsDouble( idxField ) );
             building_height.push_back(feature->GetFieldAsDouble(idxField) * heightFactor);
             break;
           case OFTString:
-            // printf( "%s,", feature->GetFieldAsString( idxField ) );
+            // qes::log::writef(qes::log::Level::info,  "%s,", feature->GetFieldAsString( idxField ) );
             break;
           default:
-            // printf( "%s,", feature->GetFieldAsString( idxField ) );
+            // qes::log::writef(qes::log::Level::info,  "%s,", feature->GetFieldAsString( idxField ) );
             break;
           }
         }
-        // std::cout << std::endl;
+        // qes::log::info() << std::endl;
       }
     } else {
       int idxField = 0;
       OGRFieldDefn *oField = poFDefn->GetFieldDefn(idxField);
-      // std::cout << "Field Name: " << oField->GetNameRef() << ", Value: ";
+      // qes::log::info() << "Field Name: " << oField->GetNameRef() << ", Value: ";
       switch (oField->GetType()) {
       case OFTInteger:
-        // printf( "%d,", feature->GetFieldAsInteger( idxField ) );
+        // qes::log::writef(qes::log::Level::info,  "%d,", feature->GetFieldAsInteger( idxField ) );
         building_height.push_back(feature->GetFieldAsInteger(idxField) * heightFactor);
         break;
       case OFTInteger64:
-        // printf( CPL_FRMT_GIB ",", feature->GetFieldAsInteger64( idxField ));
+        // qes::log::writef(qes::log::Level::info,  CPL_FRMT_GIB ",", feature->GetFieldAsInteger64( idxField ));
         building_height.push_back(feature->GetFieldAsInteger(idxField) * heightFactor);
         break;
       case OFTReal:
-        // printf( "%.3f,", feature->GetFieldAsDouble( idxField ) );
+        // qes::log::writef(qes::log::Level::info,  "%.3f,", feature->GetFieldAsDouble( idxField ) );
         building_height.push_back(feature->GetFieldAsDouble(idxField) * heightFactor);
         break;
       case OFTString:
-        // printf( "%s,", feature->GetFieldAsString( idxField ) );
+        // qes::log::writef(qes::log::Level::info,  "%s,", feature->GetFieldAsString( idxField ) );
         break;
       default:
-        // printf( "%s,", feature->GetFieldAsString( idxField ) );
+        // qes::log::writef(qes::log::Level::info,  "%s,", feature->GetFieldAsString( idxField ) );
         break;
       }
-      // std::cout << std::endl;
+      // qes::log::info() << std::endl;
     }
 
     OGRGeometry *poGeometry;
@@ -226,7 +225,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 #else
       OGRPoint *poPoint = (OGRPoint *)poGeometry;
 #endif
-      printf("%.3f,%3.f\n", poPoint->getX(), poPoint->getY());
+      qes::log::writef(qes::log::Level::info, "%.3f,%3.f\n", poPoint->getX(), poPoint->getY());
     }
 
     // POLYGON
@@ -239,7 +238,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
       ;
       pLinearRing = ((OGRPolygon *)poGeometry)->getExteriorRing();
       int vertexCount = pLinearRing->getNumPoints();
-      // std::cout << "Building Poly #" << polyCount << " (" << vertexCount << " vertices):" << std::endl;
+      // qes::log::info() << "Building Poly #" << polyCount << " (" << vertexCount << " vertices):" << std::endl;
 
       std::vector<polyVert> vertexList(vertexCount);
 
@@ -254,7 +253,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
         if (y > maxBound[1]) maxBound[1] = y;
 
 
-        // std::cout << "\t(" << x << ", " << y << ")" <<
+        // qes::log::info() << "\t(" << x << ", " << y << ")" <<
         // std::endl;
         vertexList[vidx] = polyVert(x, y);
       }
@@ -265,20 +264,20 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 
 
     } else {
-      printf("no point geometry\n");
+      qes::log::writef(qes::log::Level::info, "no point geometry\n");
     }
   }
 
-  std::cout << "Bounds of SHP: Min=(" << minBound[0] << ", " << minBound[1] << "), Max=(" << maxBound[0] << ", " << maxBound[1] << ")" << std::endl;
-  std::cout << "Domain Size: " << (int)ceil(maxBound[0] - minBound[0]) << " X " << (int)ceil(maxBound[1] - minBound[1]) << std::endl;
+  qes::log::info() << "Bounds of SHP: Min=(" << minBound[0] << ", " << minBound[1] << "), Max=(" << maxBound[0] << ", " << maxBound[1] << ")" << std::endl;
+  qes::log::info() << "Domain Size: " << (int)ceil(maxBound[0] - minBound[0]) << " X " << (int)ceil(maxBound[1] - minBound[1]) << std::endl;
 }
 #endif
 
 void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
                                    std::map<std::string, std::vector<float>> &features)
 {
-  std::cout << "Summary of Vector Data:" << std::endl;
-  std::cout << "----------------------------" << std::endl;
+  qes::log::info() << "Summary of Vector Data:" << std::endl;
+  qes::log::info() << "----------------------------" << std::endl;
   int polyCount = 0;
 
   // OGRLayer  *poLayer;
@@ -286,12 +285,12 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 
 
   int numLayers = m_poDS->GetLayerCount();
-  std::cout << "- Number of Layers: " << numLayers << std::endl;
+  qes::log::info() << "- Number of Layers: " << numLayers << std::endl;
 
   // Dump the layers for now
   for (auto i = 0; i < numLayers; i++) {
     OGRLayer *poLayer = m_poDS->GetLayer(i);
-    std::cout << "- Layer Name: " << poLayer->GetName() << std::endl;
+    qes::log::info() << "- Layer Name: " << poLayer->GetName() << std::endl;
   }
 
   // just what I set my layer name too -- may need to specify this
@@ -299,8 +298,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
   // Need to extract the layer from the QU XML files....
   OGRLayer *buildingLayer = m_poDS->GetLayerByName(m_layerName.c_str());
   if (buildingLayer == nullptr) {
-    std::cerr << "[ERROR]\t ESRIShapefile -- no layer" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR]\t ESRIShapefile -- no layer" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // for all features in the building layer
@@ -308,25 +306,23 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
   OGRFeature *feature = nullptr;
   OGRFeatureDefn *poFDefn = buildingLayer->GetLayerDefn();
 
-  std::cout << "- Number of Features: " << buildingLayer->GetFeatureCount() << std::endl;
+  qes::log::info() << "- Number of Features: " << buildingLayer->GetFeatureCount() << std::endl;
   if (buildingLayer->GetFeatureCount() == 0) {
-    std::cerr << "[ERROR]\t ESRIShapefile -- no feature" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR]\t ESRIShapefile -- no feature" << std::endl; throw qes::InputError(message.str()); }
   }
 
   feature = buildingLayer->GetFeature(0);
 
-  std::cout << "- Number of Fields: " << feature->GetFieldCount() << std::endl;
+  qes::log::info() << "- Number of Fields: " << feature->GetFieldCount() << std::endl;
   if (feature->GetFieldCount() == 0) {
-    std::cerr << "[ERROR]\t ESRIShapefile -- no field" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR]\t ESRIShapefile -- no field" << std::endl; throw qes::InputError(message.str()); }
   }
 
-  std::cout << "- Field Names:";
+  qes::log::info() << "- Field Names:";
   std::vector<int> validIdxField;
   for (int idxField = 0; idxField < poFDefn->GetFieldCount(); ++idxField) {
     OGRFieldDefn *oField = poFDefn->GetFieldDefn(idxField);
-    std::cout << " " << oField->GetNameRef();
+    qes::log::info() << " " << oField->GetNameRef();
 
     switch (oField->GetType()) {
     case OFTInteger:
@@ -346,7 +342,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
       break;
     }
   }
-  std::cout << std::endl;
+  qes::log::info() << std::endl;
 
   while ((feature = buildingLayer->GetNextFeature()) != nullptr) {
     // for( auto&& oField: *feature ) {
@@ -354,7 +350,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 
       OGRFieldDefn *oField = poFDefn->GetFieldDefn(idxField);
       std::string fn(oField->GetNameRef());
-      // std::cout << "[TEST] Field Name: " << fn << std::endl;
+      // qes::log::info() << "[TEST] Field Name: " << fn << std::endl;
 
       switch (oField->GetType()) {
       case OFTInteger:
@@ -367,8 +363,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
         features[fn].push_back(feature->GetFieldAsDouble(idxField));
         break;
       default:
-        std::cerr << "[ERROR]\t ESRIShapefile -- incompatible field type" << std::endl;
-        exit(1);
+        { std::ostringstream message; message << "[ERROR]\t ESRIShapefile -- incompatible field type" << std::endl; throw qes::InputError(message.str()); }
       }
     }
 
@@ -382,7 +377,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 #else
       OGRPoint *poPoint = (OGRPoint *)poGeometry;
 #endif
-      printf("%.3f,%3.f\n", poPoint->getX(), poPoint->getY());
+      qes::log::writef(qes::log::Level::info, "%.3f,%3.f\n", poPoint->getX(), poPoint->getY());
     }
 
     // POLYGON
@@ -395,7 +390,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 
       pLinearRing = ((OGRPolygon *)poGeometry)->getExteriorRing();
       int vertexCount = pLinearRing->getNumPoints();
-      // std::cout << "Building Poly #" << polyCount << " (" << vertexCount << " vertices):" << std::endl;
+      // qes::log::info() << "Building Poly #" << polyCount << " (" << vertexCount << " vertices):" << std::endl;
 
 
       std::vector<polyVert> vertexList(vertexCount);
@@ -411,7 +406,7 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
         if (y > maxBound[1]) maxBound[1] = y;
 
 
-        // std::cout << "\t(" << x << ", " << y << ")" <<
+        // qes::log::info() << "\t(" << x << ", " << y << ")" <<
         // std::endl;
         vertexList[vidx] = polyVert(x, y);
       }
@@ -420,10 +415,10 @@ void ESRIShapefile::loadVectorData(std::vector<std::vector<polyVert>> &polygons,
 
 
     } else {
-      printf("no point geometry\n");
+      qes::log::writef(qes::log::Level::info, "no point geometry\n");
     }
   }
 
-  std::cout << "----------------------------" << std::endl;
-  // std::cout << "[TEST] number of polygons " << polygons.size() << std::endl;
+  qes::log::info() << "----------------------------" << std::endl;
+  // qes::log::info() << "[TEST] number of polygons " << polygons.size() << std::endl;
 }

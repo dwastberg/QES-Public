@@ -28,12 +28,14 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+
+#include "util/QESLog.h"
 #include "WINDSOutputWRF.h"
 
 WINDSOutputWRF::WINDSOutputWRF(WINDSGeneralData *WGD, WRFInput *wrfInputData)
   : QESNetCDFOutput(), WGD_(WGD), wrf_(wrfInputData)
 {
-  std::cout << "[Output] \t Writing WIND Field back to WRF Input File" << std::endl;
+  qes::log::info() << "[Output] \t Writing WIND Field back to WRF Input File" << std::endl;
 }
 
 

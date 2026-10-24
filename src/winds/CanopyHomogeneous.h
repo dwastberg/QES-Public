@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <cmath>
 #include "util/ParseInterface.h"
 #include "CanopyElement.h"
@@ -89,8 +91,7 @@ public:
       polygonVertices[nNodes].x_poly = xVertex[0];
       polygonVertices[nNodes].y_poly = yVertex[0];
     } else {
-      std::cerr << "[ERROR] Homogeneous canopy ill-defined" << std::endl;
-      exit(1);
+      { std::ostringstream message; message << "[ERROR] Homogeneous canopy ill-defined" << std::endl; throw qes::InputError(message.str()); }
     }
   }
 

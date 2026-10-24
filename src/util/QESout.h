@@ -41,7 +41,7 @@
 
 namespace QESout {
 void splashScreen();
-void error(std::string);
+[[noreturn]] void error(std::string);
 void warning(std::string);
 void setVerbose();
 void verbose(std::string);

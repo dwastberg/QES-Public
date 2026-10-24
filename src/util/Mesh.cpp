@@ -40,6 +40,8 @@
  * @sa HitRecord
  */
 
+
+#include "util/QESLog.h"
 #include "Mesh.h"
 
 float Mesh::getHeight(float x, float y)
@@ -84,23 +86,23 @@ void Mesh::calculateMixingLength(int dimX, int dimY, int dimZ, float dx, float d
             bool isHit = triangleBVH->rayHit(ray, hit);
 
             if (isHit) {
-              // std::cout<<"Hit found."<<std::endl;
+              // qes::log::info()<<"Hit found."<<std::endl;
 
               // compare the mixLengths
               if (hit.hitDist < maxLength) {
                 maxLength = hit.hitDist;
-                // std::cout<<"maxlength updated"<<std::endl;
+                // qes::log::info()<<"maxlength updated"<<std::endl;
               }
             } else {
-              // std::cout<<"Hit not found"<<std::endl;
-              // std::cout<<"Hit may not be found but hit.hitDist = "<<hit.hitDist<<std::endl;
+              // qes::log::info()<<"Hit not found"<<std::endl;
+              // qes::log::info()<<"Hit may not be found but hit.hitDist = "<<hit.hitDist<<std::endl;
             }
           }
 
-          // std::cout<<"Mixing length for this cell is "<<maxLength<<std::endl;
+          // qes::log::info()<<"Mixing length for this cell is "<<maxLength<<std::endl;
           // add to list of vectors
           mixingLength[icell_idx] = maxLength;
-          // std::cout<<"\n\n"<<std::endl;
+          // qes::log::info()<<"\n\n"<<std::endl;
         }
       }
     }
@@ -112,7 +114,7 @@ void Mesh::calculateMixingLength(int dimX, int dimY, int dimZ, float dx, float d
 // marking now.
 void Mesh::tempOPTIXMethod(int dimX, int dimY, int dimZ, float dx, float dy, float dz, const vector<int> &icellflag, vector<double> &mixingLengths)
 {
-  std::cout << "--------------Enters the tempOPTIXMethod--------------------" << std::endl;
+  qes::log::info() << "--------------Enters the tempOPTIXMethod--------------------" << std::endl;
   //   OptixRayTrace optixRayTracer(optixTris);
   //   optixRayTracer.calculateMixingLength( mlSampleRate, dimX, dimY, dimZ, dx, dy, dz, icellflag, mixingLengths);
 }

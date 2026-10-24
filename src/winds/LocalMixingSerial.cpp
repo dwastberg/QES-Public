@@ -34,6 +34,8 @@
  * @sa LocalMixing
  */
 
+
+#include "util/QESLog.h"
 #include "LocalMixingSerial.h"
 
 // These take care of the circular reference
@@ -134,7 +136,7 @@ void LocalMixingSerial::defineMixingLength(const WINDSInputData *WID, WINDSGener
   getMinDistWall(WGD, max_height);
 
   // linear interpolation between 2.0*max_z and 2.4*max_z
-  std::cout << "[MixLength] \t linear interp of mixing length" << std::endl;
+  qes::log::info() << "[MixLength] \t linear interp of mixing length" << std::endl;
   int k1 = std::min(max_height - 1, nz - 2);
   int k2 = std::min(k1 + k1 / 5, nz - 2);
   for (int i = 1; i < nx - 2; ++i) {
@@ -199,12 +201,12 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
     }
   }
 
-  std::cout << "[MixLength] \t cells with wall below: " << wall_below_indices.size() << std::endl;
-  std::cout << "[MixLength] \t cells with wall above: " << wall_above_indices.size() << std::endl;
-  std::cout << "[MixLength] \t cells with wall in the front: " << wall_front_indices.size() << std::endl;
-  std::cout << "[MixLength] \t cells with wall in the back: " << wall_back_indices.size() << std::endl;
-  std::cout << "[MixLength] \t cells with wall to the right: " << wall_right_indices.size() << std::endl;
-  std::cout << "[MixLength] \t cells with wall to the left: " << wall_left_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall below: " << wall_below_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall above: " << wall_above_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall in the front: " << wall_front_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall in the back: " << wall_back_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall to the right: " << wall_right_indices.size() << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall to the left: " << wall_left_indices.size() << std::endl;
 
   // apply mixing length to the cells with wall below
   for (size_t id = 0; id < wall_below_indices.size(); id++) {
@@ -261,7 +263,7 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
       }
     }
   }
-  std::cout << "[MixLength] \t cells with wall below: DONE " << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall below: DONE " << std::endl;
 
   /// apply mixing length to the cells with wall in back
   for (size_t id = 0; id < wall_back_indices.size(); id++) {
@@ -304,7 +306,7 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
       }
     }
   }
-  std::cout << "[MixLength] \t cells with wall in the  back: DONE " << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall in the  back: DONE " << std::endl;
 
   /// apply mixing length to the cells with wall in front
   for (size_t id = 0; id < wall_front_indices.size(); id++) {
@@ -346,7 +348,7 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
       }
     }
   }
-  std::cout << "[MixLength] \t cells with wall in the front: DONE " << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall in the front: DONE " << std::endl;
 
   /// apply mixing length to the cells with wall to right
   for (size_t id = 0; id < wall_right_indices.size(); id++) {
@@ -388,7 +390,7 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
       }
     }
   }
-  std::cout << "[MixLength] \t cells with wall to the right: DONE " << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall to the right: DONE " << std::endl;
 
   /// apply mixing length to the cells with wall to left
   for (size_t id = 0; id < wall_left_indices.size(); id++) {
@@ -431,5 +433,5 @@ void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
       }
     }
   }
-  std::cout << "[MixLength] \t cells with wall to the left: DONE " << std::endl;
+  qes::log::info() << "[MixLength] \t cells with wall to the left: DONE " << std::endl;
 }

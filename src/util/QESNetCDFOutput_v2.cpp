@@ -38,6 +38,8 @@
  *   - The methods allow to be type generic (as long as the data is either int, float, or double)
  */
 
+
+#include "util/QESLog.h"
 #include "QESNetCDFOutput_v2.h"
 
 QESNetCDFOutput_v2::QESNetCDFOutput_v2(const std::string &output_file)
@@ -68,7 +70,7 @@ void QESNetCDFOutput_v2::setStartTime(const QEStime &in)
 void QESNetCDFOutput_v2::newTimeEntry(const QEStime &timeIn)
 {
   if (timeCurrent == timeIn) {
-    // std::cerr << "[!!!WARNING!!!]\ttime for new entry already exists" << std::endl;
+    // qes::log::warning() << "[!!!WARNING!!!]\ttime for new entry already exists" << std::endl;
     return;
   }
 
@@ -77,7 +79,7 @@ void QESNetCDFOutput_v2::newTimeEntry(const QEStime &timeIn)
 
   // check if start time is define (needed for "time")
   if (output_counter == 0 && !flagStartTimeSet) {
-    std::cerr << "[!!!WARNING!!!]\tstart time not defined in output -> use first time entry as start time" << std::endl;
+    qes::log::warning() << "[!!!WARNING!!!]\tstart time not defined in output -> use first time entry as start time" << std::endl;
     setStartTime(timeCurrent);
     time = 0.0;
   } else {
@@ -120,8 +122,7 @@ void QESNetCDFOutput_v2::newDimension(const std::string &name,
     saveField2D(name, *data);
     output_dimensions.insert({ name, ncDim });
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // -> float
@@ -138,8 +139,7 @@ void QESNetCDFOutput_v2::newDimension(const std::string &name,
     saveField2D(name, *data);
     output_dimensions.insert({ name, ncDim });
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // -> double
@@ -157,8 +157,7 @@ void QESNetCDFOutput_v2::newDimension(const std::string &name,
     output_dimensions.insert({ name, ncDim });
     // set_all_output_fields.insert(name);
   } else {
-    std::cerr << "[ERROR] Dimension already exits" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Dimension already exits" << std::endl; throw qes::InputError(message.str()); }
   }
 }
 // sets of dimension
@@ -171,8 +170,7 @@ void QESNetCDFOutput_v2::newDimensionSet(const std::string &name,
       if (output_dimensions.find(s) != output_dimensions.end()) {
         dim_vect.push_back(output_dimensions[s]);
       } else {
-        std::cerr << "[ERROR] in set " << name << " dimension " << s << " does not exits" << std::endl;
-        exit(1);
+        { std::ostringstream message; message << "[ERROR] in set " << name << " dimension " << s << " does not exits" << std::endl; throw qes::InputError(message.str()); }
       }
     }
     output_dimension_sets.insert({ name, dim_vect });
@@ -180,16 +178,14 @@ void QESNetCDFOutput_v2::newDimensionSet(const std::string &name,
     if (output_dimension_sets[name].size() == dims.size()) {
       for (auto k = 0; k < output_dimension_sets[name].size(); ++k) {
         if (output_dimension_sets[name][k].getName() != dims[k]) {
-          std::cerr << "[!!!ERROR!!!]\tSet of dimensions already exits and contain different dimensions" << std::endl;
-          exit(1);
+          { std::ostringstream message; message << "[!!!ERROR!!!]\tSet of dimensions already exits and contain different dimensions" << std::endl; throw qes::InputError(message.str()); }
         } else {
           // dimension in set is compatible.
           // note: file cannot have 2 dimension with the same name
         }
       }
     } else {
-      std::cerr << "[!!!ERROR!!!]\tSet of dimensions already exits and is not compatible" << std::endl;
-      exit(1);
+      { std::ostringstream message; message << "[!!!ERROR!!!]\tSet of dimensions already exits and is not compatible" << std::endl; throw qes::InputError(message.str()); }
     }
   }
 }
@@ -205,8 +201,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjScalarInt(data, name, long_name, units, { output_dimension_sets[dims] }));
     output_object[name]->add(this);
@@ -222,8 +217,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjScalarFlt(data, name, long_name, units, { output_dimension_sets[dims] }));
     output_object[name]->add(this);
@@ -239,8 +233,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjScalarDbl(data, name, long_name, units, { output_dimension_sets[dims] }));
     output_object[name]->add(this);
@@ -259,8 +252,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjVectorInt(data, name, long_name, units, output_dimension_sets[dims]));
     output_object[name]->add(this);
@@ -276,8 +268,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjVectorFlt(data, name, long_name, units, output_dimension_sets[dims]));
     output_object[name]->add(this);
@@ -293,8 +284,7 @@ void QESNetCDFOutput_v2::newField(const std::string &name,
 {
   // FM -> here I do not know what is the best way to add the ref to data.
   if (output_dimension_sets.find(dims) == output_dimension_sets.end()) {
-    std::cerr << "[ERROR] Set of dimensions does not exit adding " << name << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] Set of dimensions does not exit adding " << name << std::endl; throw qes::InputError(message.str()); }
   } else {
     output_object.emplace(name, new ObjVectorDbl(data, name, long_name, units, output_dimension_sets[dims]));
     output_object[name]->add(this);
@@ -323,10 +313,9 @@ void QESNetCDFOutput_v2::addOutputFields(const std::set<std::string> &new_fields
                       std::inserter(result, result.end()));
 
   if (!result.empty()) {
-    std::cerr << "[ERROR] Fields ";
-    for (const std::string &r : result) { std::cerr << r << " "; }
-    std::cerr << "not defined" << std::endl;
-    exit(1);
+    qes::log::error() << "[ERROR] Fields ";
+    for (const std::string &r : result) { qes::log::error() << r << " "; }
+    { std::ostringstream message; message << "not defined" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // create list of fields to save base on output_fields
@@ -346,8 +335,7 @@ void QESNetCDFOutput_v2::pushAllFieldsToFile(QEStime &timeIn)
 {
 
   if (timeIn != timeCurrent) {
-    std::cerr << "[ERROR] attempting to save with wrong timestamp" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] attempting to save with wrong timestamp" << std::endl; throw qes::InputError(message.str()); }
   }
   for (const auto &s : set_all_output_fields) {
     output_object[s]->save(this, output_counter);
@@ -358,8 +346,7 @@ void QESNetCDFOutput_v2::pushFieldsToFile(QEStime &timeIn, const std::vector<std
 {
 
   if (timeIn != timeCurrent) {
-    std::cerr << "[ERROR] attempting to save with wrong timestamp" << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] attempting to save with wrong timestamp" << std::endl; throw qes::InputError(message.str()); }
   }
   for (const auto &s : fields) {
     output_object[s]->save(this, output_counter);

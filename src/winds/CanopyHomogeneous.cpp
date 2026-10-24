@@ -30,6 +30,8 @@
 
 /** @file CanopyHomogeneous.cpp */
 
+
+#include "util/QESLog.h"
 #include "CanopyHomogeneous.h"
 
 #include "WINDSInputData.h"
@@ -158,8 +160,7 @@ void CanopyHomogeneous::setCellFlags(const WINDSInputData *WID, WINDSGeneralData
 
   // check of illegal definition.
   if (k_start > k_end) {
-    std::cerr << "ERROR in tree definition (k_start > k end)" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "ERROR in tree definition (k_start > k end)" << std::endl; throw qes::InputError(message.str()); }
   }
 
   return;
@@ -190,10 +191,10 @@ void CanopyHomogeneous::canopyVegetation(WINDSGeneralData *WGD, int canopy_id)
                                                         WGD->canopy->canopy_atten_coeff[icell_cent_top],
                                                         WGD->vk,
                                                         0.0);
-      // std::cout << "WGD->vk:" << WGD->vk << "\n";
+      // qes::log::info() << "WGD->vk:" << WGD->vk << "\n";
       // if (WGD->canopy->canopy_d[icell_2d] >= 10000 || isnan(WGD->canopy->canopy_d[icell_2d])) {
       if (WGD->canopy->canopy_d[icell_2d] > WGD->canopy->canopy_height[icell_2d]) {
-        std::cerr << "bisection failed to converge \n"
+        qes::log::error() << "bisection failed to converge \n"
                   << "\t canopy ID = " << canopy_id << "; Height = " << H << "\n"
                   << "\t WGD->canopy_atten[] = " << WGD->canopy->canopy_atten_coeff[icell_cent_top] << "\n"
                   << "\t WGD->canopy_d[] = " << WGD->canopy->canopy_d[icell_2d] << "\n"

@@ -33,6 +33,8 @@
  * @brief :document this:
  */
 
+
+#include "util/QESLog.h"
 #include <array>
 #include <cstring>
 
@@ -70,7 +72,7 @@ OptixRayTrace::~OptixRayTrace()
 
 static void context_log_cb(unsigned int level, const char *tag, const char *message, void * /*cbdata*/)
 {
-  std::cerr << "[level, tag, message] = ["
+  qes::log::error() << "[level, tag, message] = ["
             << level << ", " << tag << ", " << message << "]"
             << "\n";
 }
@@ -216,7 +218,7 @@ void OptixRayTrace::buildAS(std::vector<Triangle *> tris)
 void OptixRayTrace::buildAS()
 {
 
-  std::cout << "\033[1;31m You are using testing acceleration structure in OptiX \033[0m" << std::endl;
+  qes::log::info() << "\033[1;31m You are using testing acceleration structure in OptiX \033[0m" << std::endl;
 
   OptixAccelBuildOptions accel_options = {};
   accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;

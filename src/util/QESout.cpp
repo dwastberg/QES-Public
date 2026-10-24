@@ -30,6 +30,8 @@
 
 /** @file QESout.cpp */
 
+
+#include "util/QESLog.h"
 #include "QESout.h"
 
 namespace QESout {
@@ -38,46 +40,45 @@ namespace {
 }
 void splashScreen()
 {
-  std::cout << "###################################################################" << std::endl;
-  std::cout << "#                                                                 #" << std::endl;
-  std::cout << "#                        Welcome to QES                           #" << std::endl;
-  std::cout << "#                                                                 #" << std::endl;
-  std::cout << "###################################################################" << std::endl;
-  std::cout << "Version: " << QES_VERSION_INFO << std::endl;// QES_VERSION_INFO comes from CMakeLists.txt
+  qes::log::info() << "###################################################################" << std::endl;
+  qes::log::info() << "#                                                                 #" << std::endl;
+  qes::log::info() << "#                        Welcome to QES                           #" << std::endl;
+  qes::log::info() << "#                                                                 #" << std::endl;
+  qes::log::info() << "###################################################################" << std::endl;
+  qes::log::info() << "Version: " << QES_VERSION_INFO << std::endl;// QES_VERSION_INFO comes from CMakeLists.txt
 #ifdef HAS_CUDA
-  std::cout << "* CUDA support available!" << std::endl;
+  qes::log::info() << "* CUDA support available!" << std::endl;
 #else
-  std::cout << "* No CUDA support - CPU Only Computations!" << std::endl;
+  qes::log::info() << "* No CUDA support - CPU Only Computations!" << std::endl;
 #endif
 
 #ifdef HAS_OPTIX
-  std::cout << "* OptiX is available!" << std::endl;
+  qes::log::info() << "* OptiX is available!" << std::endl;
 #endif
 
 #ifdef _OPENMP
-  std::cout << "* OpenMP is available!" << std::endl;
+  qes::log::info() << "* OpenMP is available!" << std::endl;
 #endif
 
 
 #ifdef HAS_CUDA
-  std::cout << "------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "------------------------------------------------------------------" << std::endl;
   int deviceCount = 0;
   cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
 
   if (error_id != cudaSuccess) {
-    std::cerr << "\n===================================================================" << std::endl;
-    std::cerr << "[ERROR]\t cudaGetDeviceCount returned "
+    qes::log::error() << "\n===================================================================" << std::endl;
+    qes::log::error() << "[ERROR]\t cudaGetDeviceCount returned "
               << static_cast<int>(error_id) << "\n\t-> "
               << cudaGetErrorString(error_id) << std::endl;
-    std::cerr << "===================================================================" << std::endl;
-    exit(EXIT_FAILURE);
+    { std::ostringstream message; message << "===================================================================" << std::endl; throw qes::InputError(message.str()); }
   }
 
   // This function call returns 0 if there are no CUDA capable devices.
   if (deviceCount == 0) {
-    std::cerr << "[!! WARNING !!]\t There are no available device(s) that support CUDA\n";
+    qes::log::warning() << "[!! WARNING !!]\t There are no available device(s) that support CUDA\n";
   } else {
-    std::cout << "[CUDA]\t Detected " << deviceCount << " CUDA Capable device(s)" << std::endl;
+    qes::log::info() << "[CUDA]\t Detected " << deviceCount << " CUDA Capable device(s)" << std::endl;
     int dev, driverVersion = 0, runtimeVersion = 0;
 
     for (dev = 0; dev < deviceCount; ++dev) {
@@ -87,16 +88,16 @@ void splashScreen()
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, dev);
 
-      std::cout << "\t Device " << dev << ": " << deviceProp.name << std::endl;
+      qes::log::info() << "\t Device " << dev << ": " << deviceProp.name << std::endl;
 
       // Console log
       cudaDriverGetVersion(&driverVersion);
       cudaRuntimeGetVersion(&runtimeVersion);
-      std::cout << "\t | CUDA Driver Version / Runtime Version: "
+      qes::log::info() << "\t | CUDA Driver Version / Runtime Version: "
                 << driverVersion / 1000 << "." << (driverVersion % 100) / 10 << " / "
                 << runtimeVersion / 1000 << "." << (runtimeVersion % 100) / 10 << std::endl;
 
-      std::cout << "\t | CUDA Capability Major/Minor version number: "
+      qes::log::info() << "\t | CUDA Capability Major/Minor version number: "
                 << deviceProp.major << "." << deviceProp.minor << std::endl;
 
       char msg[256];
@@ -113,40 +114,38 @@ void splashScreen()
                static_cast<float>(deviceProp.totalGlobalMem / 1048576.0f),
                (unsigned long long)deviceProp.totalGlobalMem);
 #endif
-      std::cout << msg;
+      qes::log::info() << msg;
 
-      //    printf("  (%2d) Multiprocessors, (%3d) CUDA Cores/MP:     %d CUDA Cores\n",
+      //    qes::log::writef(qes::log::Level::info, "  (%2d) Multiprocessors, (%3d) CUDA Cores/MP:     %d CUDA Cores\n",
       //           deviceProp.multiProcessorCount,
       //           _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
       //           _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) *
       //           deviceProp.multiProcessorCount);
 
-      std::cout << "\t | GPU Max Clock rate:  "
+      qes::log::info() << "\t | GPU Max Clock rate:  "
                 << deviceProp.clockRate * 1e-3f << " MHz ("
                 << deviceProp.clockRate * 1e-6f << " GHz)" << std::endl;
 
-      std::cout << "\t | PCI: BusID=" << deviceProp.pciBusID << ", "
+      qes::log::info() << "\t | PCI: BusID=" << deviceProp.pciBusID << ", "
                 << "DeviceID=" << deviceProp.pciDeviceID << ", "
                 << "DomainID=" << deviceProp.pciDomainID << std::endl;
     }
   }
 #endif
 
-  std::cout << "###################################################################" << std::endl;
+  qes::log::info() << "###################################################################" << std::endl;
 }
 
 
-void error(std::string out)
+[[noreturn]] void error(std::string out)
 {
-  std::cerr << "\n===================================================================" << std::endl;
-  std::cerr << "[ERROR]\t " << out << std::endl;
-  std::cerr << "===================================================================" << std::endl;
-  exit(EXIT_FAILURE);
+  throw qes::RuntimeError(out);
 }
+
 
 void warning(std::string out)
 {
-  std::cerr << "[!! WARNING !!]\t " << out << std::endl;
+  qes::log::warning() << out << std::endl;
 }
 
 void setVerbose()
@@ -157,7 +156,7 @@ void setVerbose()
 void verbose(std::string out)
 {
   if (verbose_flag)
-    std::cout << out << std::endl;
+    qes::log::debug() << out << std::endl;
 }
 }// namespace QESout
 

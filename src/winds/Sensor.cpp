@@ -37,6 +37,8 @@
  * @sa TimeSeries
  */
 
+
+#include "util/QESLog.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -58,8 +60,7 @@ void Sensor::inputWindProfile(const WINDSInputData *WID, WINDSGeneralData *WGD, 
 {
 
 #if 1
-  std::cerr << "THIS FUNCTION IS OBSOLETE" << std::endl;
-  exit(EXIT_FAILURE);
+  { std::ostringstream message; message << "THIS FUNCTION IS OBSOLETE" << std::endl; throw qes::UnsupportedFeature(message.str()); }
 #else
 
   float z0_domain;
@@ -151,15 +152,14 @@ void Sensor::inputWindProfile(const WINDSInputData *WID, WINDSGeneralData *WGD, 
   auto end_InputWindProfile = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
   std::chrono::duration<float> elapsed_InputWindProfile = end_InputWindProfile - start_InputWindProfile;
-  std::cout << "Elapsed time for input wind profile: " << elapsed_InputWindProfile.count() << " s\n";
+  qes::log::info() << "Elapsed time for input wind profile: " << elapsed_InputWindProfile.count() << " s\n";
 #endif
 }
 
 void Sensor::BarnesInterpolationCPU(const WINDSInputData *WID, WINDSGeneralData *WGD, std::vector<std::vector<float>> u_prof, std::vector<std::vector<float>> v_prof, int num_sites, std::vector<int> available_sensor_id, float asl_percent, float abl_height)
 {
 #if 1
-  std::cerr << "THIS FUNCTION IS OBSOLETE" << std::endl;
-  exit(EXIT_FAILURE);
+  { std::ostringstream message; message << "THIS FUNCTION IS OBSOLETE" << std::endl; throw qes::UnsupportedFeature(message.str()); }
 #else
   std::vector<float> x, y;
   x.resize(WGD->nx);

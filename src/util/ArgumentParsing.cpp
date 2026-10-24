@@ -20,6 +20,8 @@
  * along with libsivelab.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#include "util/QESLog.h"
 #include <cassert>
 #include "ArgumentParsing.h"
 
@@ -55,7 +57,7 @@ void ArgumentParsing::reg(const std::string &argName, const std::string &descrip
 
 void ArgumentParsing::printUsage() const
 {
-  std::cout << m_optDesc << std::endl;
+  qes::log::info() << m_optDesc << std::endl;
 }
 
 bool ArgumentParsing::isSet(const std::string &argName)

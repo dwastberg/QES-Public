@@ -37,6 +37,8 @@
  * @sa TimeSeries
  */
 
+
+#include "util/QESLog.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -65,7 +67,7 @@ void WindProfilerBarnGPU::interpolateWindProfile(const WINDSInputData *WID, WIND
     BarnesInterpolationGPU(WID, WGD);
     auto finishBarnesGPU = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsedBarnesGPU = finishBarnesGPU - startBarnesGPU;
-    // std::cout << "Elapsed time for Barnes interpolation on GPU: " << elapsedBarnesGPU.count() << " s\n";
+    // qes::log::info() << "Elapsed time for Barnes interpolation on GPU: " << elapsedBarnesGPU.count() << " s\n";
   }
   return;
 }

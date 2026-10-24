@@ -36,6 +36,8 @@
  *
  */
 
+
+#include "util/QESLog.h"
 #include "Canopy.h"
 #include "util/QESFeatures.h"
 #include "util/UnsupportedFeature.h"
@@ -104,14 +106,14 @@ void Canopy::setCanopyElements(const WINDSInputData *WID, WINDSGeneralData *WGD)
     effective_height.push_back(allCanopiesV[cId]->height_eff);
   }
 
-  std::cout << "Sorting canopies by height..." << std::flush;
+  qes::log::info() << "Sorting canopies by height..." << std::flush;
   mergeSort(effective_height, allCanopiesV, canopy_id);
-  std::cout << "[done]" << std::endl;
+  qes::log::info() << "[done]" << std::endl;
 
   auto canopysetup_finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
 
   std::chrono::duration<float> elapsed_cut = canopysetup_finish - canopysetup_start;
-  std::cout << "Elapsed time for canopy setup : " << elapsed_cut.count() << " s\n";
+  qes::log::info() << "Elapsed time for canopy setup : " << elapsed_cut.count() << " s\n";
 
   return;
 }
@@ -208,10 +210,10 @@ void Canopy::canopyCioncoParam(WINDSGeneralData *WGD)
                                              canopy_atten_coeff[icell_3d],
                                              WGD->vk,
                                              0.0);
-        // std::cout << "WGD->vk:" << WGD->vk << "\n";
-        // std::cout << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
+        // qes::log::info() << "WGD->vk:" << WGD->vk << "\n";
+        // qes::log::info() << "WGD->canopy_atten[icell_cent]:" << WGD->canopy_atten[icell_cent] << "\n";
         if (canopy_d[icell_2d] == 10000) {
-          std::cout << "bisection failed to converge"
+          qes::log::info() << "bisection failed to converge"
                     << "\n";
           canopy_d[icell_2d] = canopySlopeMatch(canopy_z0[icell_2d], canopy_height[icell_2d], canopy_atten_coeff[icell_3d]);
         }
@@ -356,12 +358,11 @@ void Canopy::canopyRegression(WINDSGeneralData *WGD)
         ym = sum_y / counter;
         canopy_z0[id] = exp(ym - ((WGD->vk / canopy_ustar[id])) * xm);
 
-        // std::cout << xm << " " << ym << " " << sum_y << " " << sum_x_sq << " " << canopy_ustar[id] << " " << canopy_z0[id] << std::endl;
+        // qes::log::info() << xm << " " << ym << " " << sum_y << " " << sum_x_sq << " " << canopy_ustar[id] << " " << canopy_z0[id] << std::endl;
 
         if (isnan(canopy_z0[id])) {
-          std::cerr << "==============================================================" << std::endl;
-          std::cerr << "[ERROR] canopy regression gives nan" << std::endl;
-          exit(EXIT_FAILURE);
+          qes::log::error() << "==============================================================" << std::endl;
+          { std::ostringstream message; message << "[ERROR] canopy regression gives nan" << std::endl; throw qes::InputError(message.str()); }
         }
 
         /* NEED MODIFICATION!!!

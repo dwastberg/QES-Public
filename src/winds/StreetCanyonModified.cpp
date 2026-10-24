@@ -30,6 +30,8 @@
 
 /** StreetCanyon.cpp */
 
+
+#include "util/QESLog.h"
 #include "PolyBuilding.h"
 
 // These take care of the circular reference
@@ -163,7 +165,7 @@ void PolyBuilding::streetCanyonModified(WINDSGeneralData *WGD)
            } else if (canyon_R_flag > 0 && canyon_L_flag == 0) {
            canyon_L = yc;
            }
-           std::cout << "test ID " << ID << " " << yc << " " << canyon_flag << " "
+           qes::log::info() << "test ID " << ID << " " << yc << " " << canyon_flag << " "
            << canyon_R_flag << " " << canyon_R << " " << canyon_L_flag << " " << canyon_L << std::endl;
         */
 
@@ -492,7 +494,7 @@ void PolyBuilding::streetCanyonModified(WINDSGeneralData *WGD)
              }
           */
 
-          // std::cout << "along_dir:   " << along_dir << std::endl;
+          // qes::log::info() << "along_dir:   " << along_dir << std::endl;
           if (canyon_flag == 1 && s > 0.9 * dxy) {
             // along velocity adjusted for height (assuming log profile) (WILL NOT WORK OVER TERRAIN)
             along_vel_mag = std::abs(velocity_mag * cos(canyon_dir - along_dir)) * log(WGD->domain.z[k] / WGD->z0) / log(WGD->domain.z[k_ref] / WGD->z0);

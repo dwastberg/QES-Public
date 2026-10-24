@@ -29,6 +29,8 @@
  ****************************************************************************/
 /** @file HRRRData.cpp */
 
+
+#include "util/QESLog.h"
 #include <string>
 using namespace std;
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -50,8 +52,8 @@ HRRRData::HRRRData(std::string fileName)
 {
   netcdf = new NetCDFInput(fileName);
 
-  std::cout << "fileName:   " << fileName << std::endl;
-  // std::cout << "HRRRFields:   " << HRRRFields[0] << std::endl;
+  qes::log::info() << "fileName:   " << fileName << std::endl;
+  // qes::log::info() << "HRRRFields:   " << HRRRFields[0] << std::endl;
 
   // Read in HRRR Lat/Lon and time variables
 

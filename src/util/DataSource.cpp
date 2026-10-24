@@ -32,6 +32,8 @@
  * @file DataSource.cpp
  */
 
+
+#include "util/QESLog.h"
 #include "DataSource.h"
 
 void DataSource::attachToFile(QESFileOutput_Interface *out)
@@ -49,7 +51,7 @@ void DataSource::pushToFile(QEStime t)
 
 void DataSource::notifyOfNewTimeEntry()
 {
-  // std::cout << "[DATA SOURCE] notified of new time entry" << std::endl;
+  // qes::log::info() << "[DATA SOURCE] notified of new time entry" << std::endl;
   m_pushed_to_file = false;
 }
 

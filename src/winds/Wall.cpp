@@ -35,6 +35,8 @@
  *
  * :long desc here if necessary:
  */
+
+#include "util/QESLog.h"
 #include "Wall.h"
 
 #include "WINDSGeneralData.h"
@@ -353,7 +355,7 @@ void Wall::wallLogBC(WINDSGeneralData *WGD, bool isInitial)
 {
   auto wallLog_start = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Applying log law parameterization..." << std::flush;
+  qes::log::info() << "Applying log law parameterization..." << std::flush;
 
   auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
   auto [dx, dy, dz] = WGD->domain.getDomainSize();
@@ -795,11 +797,11 @@ void Wall::wallLogBC(WINDSGeneralData *WGD, bool isInitial)
     ustar[j] = ustar_wall;
   }
 
-  std::cout << "[done]" << std::endl;
+  qes::log::info() << "[done]" << std::endl;
 
   auto wallLog_finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
   std::chrono::duration<float> elapsed_wallLog = wallLog_finish - wallLog_start;
-  std::cout << "Elapsed time for applying log law: " << elapsed_wallLog.count() << " s\n";
+  qes::log::info() << "Elapsed time for applying log law: " << elapsed_wallLog.count() << " s\n";
 }
 
 void Wall::setVelocityZero(WINDSGeneralData *WGD)

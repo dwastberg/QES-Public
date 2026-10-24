@@ -33,6 +33,8 @@
  */
 #pragma once
 
+#include "util/QESLog.h"
+
 #include <iostream>
 #include <list>
 #include <string>
@@ -107,7 +109,7 @@ class QESNullOutput : public QESFileOutput_Interface
 public:
   explicit QESNullOutput(const std::string &s)
   {
-    std::cerr << "[!!!WARNING!!!]\toutput disabled for file: " << s << std::endl;
+    qes::log::warning() << "[!!!WARNING!!!]\toutput disabled for file: " << s << std::endl;
   }
   virtual ~QESNullOutput() = default;
 

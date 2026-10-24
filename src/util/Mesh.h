@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "util/QESLog.h"
+
 #include "Triangle.h"
 #include "BVH.h"
 #include "SphereDirections.h"
@@ -78,8 +80,8 @@ public:
   Mesh(const vector<Triangle *> &tris)
     : mlSampleRate(100)
   {
-    std::cout << "-------------------------------------------------------------------" << std::endl;
-    std::cout << "[Mesh]\t\t Initialization of triangular mesh...\n";
+    qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+    qes::log::info() << "[Mesh]\t\t Initialization of triangular mesh...\n";
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -93,7 +95,7 @@ public:
 
     auto finish = std::chrono::high_resolution_clock::now();// Finish recording execution time
     std::chrono::duration<float> elapsed_cut = finish - start;
-    std::cout << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
+    qes::log::info() << "\t\t elapsed time: " << elapsed_cut.count() << " s\n";
   }
 
   /**

@@ -33,6 +33,8 @@
  * @brief :document this:
  */
 
+
+#include "util/QESLog.h"
 #include "SphereDirections.h"
 
 #if 0
@@ -81,7 +83,7 @@ Vector3 SphereDirections::getNextDirCardinal(){
       next = &nextList[vecCount];
       vecCount++;
    }
-   std::cout<<"Next Direction: "<<(*next)[0]<<", "<<(*next)[1]<<", "<<(*next)[2]<<std::endl;
+   qes::log::info()<<"Next Direction: "<<(*next)[0]<<", "<<(*next)[1]<<", "<<(*next)[2]<<std::endl;
    return *next;
 }
 
@@ -111,7 +113,7 @@ Vector3 SphereDirections::getNextDir2(){
          prevDir = nextDir;
       }
    }else{
-      std::cout<<"You are trying to get more directional vectors than indicated."<<std::endl;
+      qes::log::info()<<"You are trying to get more directional vectors than indicated."<<std::endl;
    }
 
    return nextDir;

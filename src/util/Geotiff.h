@@ -1,3 +1,5 @@
+
+#include "util/QESLog.h"
 #include "iostream"
 #include "string"
 #include "gdal_priv.h"
@@ -189,8 +191,8 @@ class Geotiff {
          CPLErr e = geotiffDataset->GetRasterBand(layerIndex)->RasterIO(
            GF_Read,0,row,NCOLS,1,rowBuff,NCOLS,1,bandType,0,0);
          if(!(e == 0)) { 
-           cout << "Warning: Unable to read scanline in Geotiff!" << endl;
-           exit(1);
+           qes::log::warning() << "Warning: Unable to read scanline in Geotiff!" << endl;
+           throw qes::RuntimeError("QES failure in Geotiff.h");
          }
            
          bandLayer[row] = new float[NCOLS];

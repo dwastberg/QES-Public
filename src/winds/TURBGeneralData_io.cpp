@@ -29,15 +29,17 @@
  ****************************************************************************/
 
 
+
+#include "util/QESLog.h"
 #include "TURBGeneralData.h"
 #include "util/NetCDFInput.h"
 
 TURBGeneralData::TURBGeneralData(const std::string inputFile, WINDSGeneralData *WGD)
   : domain(WGD->domain)
 {
-  std::cout << "-------------------------------------------------------------------" << std::endl;
-  std::cout << "[QES-TURB]\t Initialization of turbulence model...\n";
-  std::cout << "[TURB Data] \t Loading QES-turb fields " << std::endl;
+  qes::log::info() << "-------------------------------------------------------------------" << std::endl;
+  qes::log::info() << "[QES-TURB]\t Initialization of turbulence model...\n";
+  qes::log::info() << "[TURB Data] \t Loading QES-turb fields " << std::endl;
 
   m_WGD = WGD;
 
@@ -54,8 +56,7 @@ TURBGeneralData::TURBGeneralData(const std::string inputFile, WINDSGeneralData *
   input->getDimensionSize("t", nt);
 
   if ((nx != domain.nx() - 1) || (ny != domain.ny() - 1) || (nz != domain.nz() - 1)) {
-    std::cerr << "[ERROR] \t data size incompatible " << std::endl;
-    exit(1);
+    { std::ostringstream message; message << "[ERROR] \t data size incompatible " << std::endl; throw qes::InputError(message.str()); }
   }
 
   allocateMemory();
@@ -94,7 +95,7 @@ TURBGeneralData::TURBGeneralData(const std::string inputFile, WINDSGeneralData *
 
 void TURBGeneralData::loadNetCDFData(int stepin)
 {
-  std::cout << "[QES-TURB]\t Loading data at step " << stepin
+  qes::log::info() << "[QES-TURB]\t Loading data at step " << stepin
             << " (" << m_WGD->timestamp[stepin] << ")" << std::endl;
 
   // netCDF variables
@@ -131,6 +132,6 @@ void TURBGeneralData::loadNetCDFData(int stepin)
   }
 
   return;
-  // std::cout << "\t\t Memory allocation completed.\n";
-  std::cout << "[QES-TURB]\t Initialization of turbulence model completed.\n";
+  // qes::log::info() << "\t\t Memory allocation completed.\n";
+  qes::log::info() << "[QES-TURB]\t Initialization of turbulence model completed.\n";
 }

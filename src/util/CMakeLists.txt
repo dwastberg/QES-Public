@@ -1,12 +1,12 @@
 add_library(qesutil STATIC
-  QESout.cpp calcTime.cpp BVH.cpp HitRecord.cpp Mesh.cpp Triangle.cpp
+  QESout.cpp QESLog.cpp calcTime.cpp BVH.cpp HitRecord.cpp Mesh.cpp Triangle.cpp
   Ray.cpp SphereDirections.cpp QEStime.cpp)
 target_link_libraries(qesutil PUBLIC qesbuild)
 target_include_directories(qesutil PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 set_target_properties(qesutil PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(QES_ENABLE_IO)
   add_library(qesutilio STATIC
-    ArgumentParsing.cpp ESRIShapefile.cpp GIStool.cpp
+    ArgumentParsing.cpp ESRIShapefile.cpp GIStool.cpp QESConsole.cpp
     NetCDFInput.cpp NetCDFOutput.cpp QESNetCDFOutput.cpp QESFileSystemHandler.cpp
     QESFileOutput_v2.cpp QESNetCDFOutput_v2.cpp DataSource.cpp)
   target_link_libraries(qesutilio PUBLIC qesutil qesiodeps)

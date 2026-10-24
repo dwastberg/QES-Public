@@ -33,6 +33,8 @@
  * @brief Handles the saving of output files.
  */
 
+
+#include "util/QESLog.h"
 #include "NetCDFOutput.h"
 
 #include <iostream>
@@ -44,12 +46,14 @@ using namespace netCDF::exceptions;
 
 NetCDFOutput ::NetCDFOutput(const std::string &output_file) : filename(output_file)
 {
-  std::cout << "[NetCDFOutput] \t create new file: " << output_file << std::endl;
+  qes::log::info() << "[NetCDFOutput] \t create new file: " << output_file << std::endl;
   outfile = new NcFile(output_file, NcFile::replace);
 }
 NetCDFOutput::~NetCDFOutput()
 {
-  std::cout << "[NetCDFOutput] \t closing file: " << filename << std::endl;
+  try {
+    qes::log::info() << "[NetCDFOutput] \t closing file: " << filename << std::endl;
+  } catch (...) { /* Diagnostics cannot escape destruction. */ }
   delete outfile;
 }
 
