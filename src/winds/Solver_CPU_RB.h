@@ -52,7 +52,7 @@
 /**
  * @class Solver_CPU_RB
  * @brief Child class of the Solver that runs the convergence
- * algorithm in serial order on a CPU.
+ * algorithm in red-black order with OpenMP on a CPU.
  */
 class Solver_CPU_RB : public Solver
 {

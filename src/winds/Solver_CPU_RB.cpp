@@ -96,10 +96,13 @@ SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
 
   qes::log::info() << "[Solver]\t Running Red/Black CPU Solver ..." << std::endl;
 
-  while (iter < itermax && max_error > tol) {
+  // Measure convergence at least once, even when the tolerance exceeds 1.
+  while (iter < itermax && (iter == 0 || max_error > tol)) {
+    max_error = 0.0f;
+    int nonfinite = 0;
 
 // Save previous iteration values for error calculation
-#pragma omp parallel private(icell_cent, icell_face, error) default(none) shared(WGD, lambda, lambda_old, max_error, R)
+#pragma omp parallel private(icell_cent, icell_face, error) default(none) shared(WGD, lambda, lambda_old, R) reduction(max : max_error) reduction(| : nonfinite)
     {
 #pragma omp for
       for (auto k = 0u; k < lambda.size(); ++k) {
@@ -167,15 +170,14 @@ SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
       // end of omp for (with implicit barrier)
 
       // Error calculation
-      max_error = 0.0;// Reset error value before error calculation
-#pragma omp for reduction(max \
-                          : max_error)
+#pragma omp for
       for (int k = 1; k < domain.nz() - 1; ++k) {
         for (int j = 0; j < domain.ny() - 1; ++j) {
           for (int i = 0; i < domain.nx() - 1; ++i) {
             // icell_cent = i + j * (WGD->nx - 1) + k * (WGD->nx - 1) * (WGD->ny - 1);// Lineralized index for cell centered values
             icell_cent = domain.cell(i, j, k);
             error = fabs(lambda[icell_cent] - lambda_old[icell_cent]);
+            if (!std::isfinite(error)) nonfinite = 1;
             if (error > max_error) {
               max_error = error;
             }
@@ -185,6 +187,9 @@ SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
       // end of omp for (with implicit barrier)
     }
     // end of omp parallel workshare
+    // Exceptions must leave the parallel region on the calling thread.
+    if (nonfinite)
+      throw qes::RuntimeError("Non-finite Lagrange multiplier change during solve");
     iter += 1;
   }
 
@@ -195,7 +200,13 @@ SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
   // qes::log::info() << "tol:" << tol << "\n";
 
 
-#pragma omp parallel private(icell_cent, icell_face) default(none) shared(WGD, lambda)
+  const auto solid = [&](int i, int j, int k) {
+    if (i < 0 || i >= domain.nx() - 1 || j < 0 || j >= domain.ny() - 1
+        || k < 1 || k >= domain.nz() - 1) return false;
+    const auto flag = WGD->icellflag[domain.cell(i, j, k)];
+    return flag == 0 || flag == 2;
+  };
+#pragma omp parallel private(icell_cent, icell_face) default(none) shared(WGD, lambda, solid)
   {
     // Update the velocity field using Euler-Lagrange equations
 #pragma omp for
@@ -264,24 +275,18 @@ SolveDiagnostics Solver_CPU_RB::solve(WINDSGeneralData *WGD, const int &itermax)
     // end of omp for (with implicit barrier)
 
 #pragma omp for
-    for (int k = 1; k < domain.nz() - 1; ++k) {
-      for (int j = 0; j < domain.ny() - 1; ++j) {
-        for (int i = 0; i < domain.nx() - 1; ++i) {
-          // icell_cent = i + j * (WGD->nx - 1) + k * (WGD->nx - 1) * (WGD->ny - 1);
-          icell_cent = domain.cell(i, j, k);
-          // icell_face = i + j * WGD->nx + k * WGD->nx * WGD->ny;
+    // Each face belongs to one iteration. Visiting solid cells and writing
+    // both faces would race on the w face shared by adjacent k slabs.
+    for (int k = 1; k < domain.nz(); ++k) {
+      for (int j = 0; j < domain.ny(); ++j) {
+        for (int i = 0; i < domain.nx(); ++i) {
           icell_face = domain.face(i, j, k);
-
-          // If we are inside a building, set velocities to 0.0
-          if (WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2) {
-            // Setting velocity field inside the building to zero
+          if (solid(i, j, k) || solid(i - 1, j, k))
             WGD->u[icell_face] = 0;
-            WGD->u[domain.faceAdd(icell_face, 1, 0, 0)] = 0;
+          if (solid(i, j, k) || solid(i, j - 1, k))
             WGD->v[icell_face] = 0;
-            WGD->v[domain.faceAdd(icell_face, 0, 1, 0)] = 0;
+          if (solid(i, j, k) || solid(i, j, k - 1))
             WGD->w[icell_face] = 0;
-            WGD->w[domain.faceAdd(icell_face, 0, 0, 1)] = 0;
-          }
         }
       }
     }
