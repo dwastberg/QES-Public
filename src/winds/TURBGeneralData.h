@@ -45,7 +45,6 @@
 
 #include "LocalMixing.h"
 #include "LocalMixingDefault.h"
-#include "LocalMixingNetCDF.h"
 #include "LocalMixingSerial.h"
 #include "LocalMixingOptix.h"
 

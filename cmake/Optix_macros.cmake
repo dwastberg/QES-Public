@@ -7,19 +7,19 @@
 function(cuda_compile_and_embed output_var cuda_file ptx_name)
 
   # Define the PTX file name
-  file(TO_CMAKE_PATH ${CMAKE_BINARY_DIR}/ptx/${ptx_name}.ptx ptxFilePath)
+  file(TO_CMAKE_PATH ${PTX_DIR}/${ptx_name}.ptx ptxFilePath)
   set(ptx_file ${ptxFilePath})
   
   # Add a custom command to compile CUDA code to PTX
   add_custom_command(
     OUTPUT ${ptx_file}
-    COMMAND ${CMAKE_CUDA_COMPILER} ${CMAKE_CUDA_FLAGS} -I${OptiX_INCLUDE} -I${CMAKE_SOURCE_DIR}/src -o ${ptx_file} -ptx ${cuda_file}
+    COMMAND ${CMAKE_CUDA_COMPILER} ${CMAKE_CUDA_FLAGS} -I${OptiX_INCLUDE} -I${QES_SOURCE_DIR}/src -o ${ptx_file} -ptx ${cuda_file}
     DEPENDS ${cuda_file}
     COMMENT "Compiling ${cuda_file} to PTX"
     )
 
   # Define the embedded C file name
-  set(embedded_file ${CMAKE_BINARY_DIR}/ptx/${ptx_name}_embedded.h)
+  set(embedded_file ${PTX_DIR}/${ptx_name}_embedded.h)
 
   # Add a custom command to convert PTX to C source using bin2c
   add_custom_command(

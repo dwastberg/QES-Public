@@ -48,15 +48,7 @@
 #include "WINDSGeneralData.h"
 
 
-PolyBuilding::PolyBuilding(const WINDSInputData *WID, WINDSGeneralData *WGD, int id)
-  : Building()
-{
-  polygonVertices = WID->buildingsParams->SHPData->m_polygons[id];
-  H = WID->buildingsParams->SHPData->m_features[WID->buildingsParams->shpHeightField][id] * WID->buildingsParams->heightFactor;
-  base_height = WGD->base_height[id];
 
-  ID = id;
-}
 
 PolyBuilding::PolyBuilding(const std::vector<polyVert> &iSP, float iH, float iBH, int iID)
   : Building()

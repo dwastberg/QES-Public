@@ -34,6 +34,7 @@
 
 #include <string>
 #include "util/ParseInterface.h"
+#include "util/QESFileSystemHandler.h"
 #include "util/ParseVector.h"
 #include "winds/DTEHeightField.h"
 #include "ignition.h"

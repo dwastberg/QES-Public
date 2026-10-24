@@ -34,6 +34,7 @@
  */
 
 #include "LocalMixing.h"
+#include "util/NetCDFOutput.h"
 
 // These take care of the circular reference
 #include "WINDSInputData.h"

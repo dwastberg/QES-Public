@@ -56,6 +56,7 @@ class TURBGeneralData;
  */
 class Canopy
 {
+  void initializeShapefileCanopies(const WINDSInputData *, WINDSGeneralData *);
 private:
 public:
   Canopy()

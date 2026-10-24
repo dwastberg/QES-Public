@@ -49,7 +49,12 @@
 #include "WINDSGeneralData.h"
 #include "WindProfilerBarnCPU.h"
 #include "WindProfilerBarnGPU.h"
-#include "WindProfilerHRRR.h"
+#include "util/QESFeatures.h"
+#include "util/UnsupportedFeature.h"
+#if QES_ENABLE_IO
+#include "HRRRData.h"
+#include "DTEHeightField.h"
+#endif
 
 
 void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGeneralData *WGD)
@@ -82,6 +87,7 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
   // FM TEMPORARY!!!!!!!!!!!!!
   time_id = WGD->time_id;
 
+#if QES_ENABLE_IO
   if (WID->hrrrInput) {
 
     if (WID->hrrrInput->interpolationScheme != 2) {
@@ -112,7 +118,9 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
         }
       }
     }
-  } else {
+  } else
+#endif
+  {
     // loop to adjust the number of sensors have information for the running timestep of the code
     for (auto i = 0u; i < WID->metParams->sensors.size(); i++) {
       if (time_id[i] == -1) {
@@ -128,9 +136,15 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
   }
 
   if (available_sensor_id.size() != 0) {
+#if QES_ENABLE_IO
     if (WID->hrrrInput) {
       WGD->hrrrInputData->readAloftData(time_id[available_sensor_id[0]]);
     }
+#else
+    if (WID->hrrrInput) {
+      throw qes::UnsupportedFeature("HRRR/geographic profiles require QES_ENABLE_IO=ON");
+    }
+#endif
   } else {
     std::cout << "Warning!!!! There is no available data for sensor at this timestep" << std::endl;
     return;
@@ -160,6 +174,7 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
       count += 1;
       continue;
     }
+#if QES_ENABLE_IO
     if (WID->hrrrInput) {
       if (WID->hrrrInput->interpolationScheme != 2) {
         if (WGD->hrrrInputData->hrrrSensorUTMx[i] < WID->simParams->UTMx
@@ -171,6 +186,11 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
         }
       }
     }
+#else
+    if (WID->hrrrInput) {
+      throw qes::UnsupportedFeature("HRRR/geographic profiles require QES_ENABLE_IO=ON");
+    }
+#endif
 
     float convergence = 0.0;
 
@@ -180,6 +200,7 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
     // average_one_overL += ts->site_one_overL / num_sites;
 
     // THIS SOULD NOT BE HERE!!! AND ITS NOT FINISHED
+#if QES_ENABLE_IO
     if (WID->simParams->UTMx != 0 && WID->simParams->UTMy != 0) {
       if (WID->metParams->sensors[idx]->site_coord_flag == 1) {
         WID->metParams->sensors[idx]->site_UTM_x = WID->metParams->sensors[idx]->site_xcoord * acos(WGD->theta)
@@ -216,12 +237,18 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
                               WID->metParams->sensors[idx]->site_UTM_zone,
                               convergence);
     }
+#else
+    if (WID->simParams->UTMx != 0 && WID->simParams->UTMy != 0) {
+      throw qes::UnsupportedFeature("HRRR/geographic profiles require QES_ENABLE_IO=ON");
+    }
+#endif
 
     site_theta[idx] = (270.0 - ts->site_wind_dir[0]) * M_PI / 180.0;
     site_i[idx] = WID->metParams->sensors[i]->site_xcoord / dx;
     site_j[idx] = WID->metParams->sensors[i]->site_ycoord / dy;
     site_id[idx] = site_i[idx] + site_j[idx] * nx;
 
+#if QES_ENABLE_IO
     if (WID->hrrrInput) {
     // Find which HRRR sensors are inside the domain
       if (site_i[idx] >= 0 && site_i[idx] < nx - 1 && site_j[idx] >= 0 && site_j[idx] < ny - 1) {
@@ -246,28 +273,42 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
 	site_id[idx] = 0;
       }
     }
+#else
+    if (WID->hrrrInput) {
+      throw qes::UnsupportedFeature("HRRR/geographic profiles require QES_ENABLE_IO=ON");
+    }
+#endif
 
     z_terrain = WGD->domain.z_face[WGD->terrain_face_id[site_id[idx]]];
       
     if (ts->site_one_overL > 0.0) {
       // Stable boundary layer
+#if QES_ENABLE_IO
       if (WID->hrrrInput && WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]] > 200) {// if HRRR file available
 	abl_height.push_back(WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]]);// read in PBL height
-      } else {
+      } else
+#endif
+      {
 	abl_height.push_back(200);
       }
     } else if (ts->site_one_overL < 0.0) {
       // Unstable boundary layer
+#if QES_ENABLE_IO
       if (WID->hrrrInput && WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]] > 1000) {// if HRRR file available
 	abl_height.push_back(WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]]);// read in PBL height
-      } else {
+      } else
+#endif
+      {
 	abl_height.push_back(1000);
       }
     } else {
       // Neutral boundary layer
+#if QES_ENABLE_IO
       if (WID->hrrrInput && WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]] > 100) {// if HRRR file available
 	abl_height.push_back(WGD->hrrrInputData->hrrrPBLHeight[WGD->hrrrInputData->hrrrSensorID[i]]);// read in PBL height
-      } else {
+      } else
+#endif
+      {
 	abl_height.push_back(100);
       }
     }
@@ -469,6 +510,7 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
     
 
     // Log-profile with HRRR data
+#if QES_ENABLE_IO
     if (ts->site_blayer_flag == 5) {
       float u_surf, v_surf, u_abl, v_abl;
       float wind_speed, wind_dir;
@@ -560,6 +602,11 @@ void WindProfilerSensorType::sensorsProfiles(const WINDSInputData *WID, WINDSGen
 	}
       }
     }
+#else
+    if (ts->site_blayer_flag == 5) {
+      throw qes::UnsupportedFeature("HRRR/geographic profiles require QES_ENABLE_IO=ON");
+    }
+#endif
   }
 
   // std::cout << "Sensor profiles are created" << std::endl;

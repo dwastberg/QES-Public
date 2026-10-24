@@ -3,7 +3,7 @@
 #include <tuple>
 #include <vector>
 
-#include "util/NetCDFInput.h"
+#include <string>
 #include "util/Vector3Int.h"
 #include "util/Vector3Float.h"
 

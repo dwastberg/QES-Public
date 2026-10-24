@@ -32,12 +32,12 @@
 #pragma once
 
 #include <string>
+#include "util/NetCDFInput.h"
 using namespace std;
 using namespace netCDF;
 using namespace netCDF::exceptions;
 #include <iostream>
 #include <cmath>
-#include "util/NetCDFInput.h"
 #include "util/GIStool.h"
 // Forward declaration
 class WINDSGeneralData;

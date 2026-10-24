@@ -38,7 +38,7 @@
  */
 
 #include "util/ParseInterface.h"
-#include "util/QESFileSystemHandler.h"
+
 
 #include "SimulationParameters.h"
 #include "FileOptions.h"
@@ -46,7 +46,7 @@
 #include "BuildingsParams.h"
 #include "VegetationParams.h"
 
-#include "fire/Fires.hpp"
+class Fires;
 
 #include "TURBParams.h"
 #include "HRRRInput.h"
@@ -84,34 +84,10 @@ public:
     fires = 0;
   }
 
-  WINDSInputData(const std::string fileName)
-  {
-
-    fileOptions = 0;
-    metParams = 0;
-    turbParams = 0;
-    buildingsParams = 0;
-    vegetationParams = 0;
-    hrrrInput = 0;
-    fires = 0;
-
-    QESfs::set_file_path(fileName);
-    // read and parse the XML
-    parseXML(fileName, "QESWindsParameters");
-  }
+  explicit WINDSInputData(const std::string fileName);
 
   /**
    * :document this:
    */
-  virtual void parseValues()
-  {
-    parseElement<SimulationParameters>(true, simParams, "simulationParameters");
-    parseElement<FileOptions>(false, fileOptions, "fileOptions");
-    parseElement<MetParams>(false, metParams, "metParams");
-    parseElement<TURBParams>(false, turbParams, "turbParams");
-    parseElement<BuildingsParams>(false, buildingsParams, "buildingsParams");
-    parseElement<VegetationParams>(false, vegetationParams, "vegetationParams");
-    parseElement<HRRRInput>(false, hrrrInput, "hrrrInput");
-    parseElement<Fires>(false, fires, "fires");
-  }
+  void parseValues() override;
 };

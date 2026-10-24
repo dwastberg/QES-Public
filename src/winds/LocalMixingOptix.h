@@ -42,7 +42,6 @@
 #include <limits>
 
 #include "LocalMixing.h"
-#include "util/NetCDFInput.h"
 
 #include "util/Mesh.h"
 

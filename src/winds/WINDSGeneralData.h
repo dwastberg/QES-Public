@@ -33,7 +33,6 @@
 #pragma once
 
 #include <vector>
-#include <netcdf>
 #include <cmath>
 
 
@@ -46,10 +45,8 @@
 #include "qes/Domain.h"
 
 #include "WindProfilerType.h"
-#include "WindProfilerWRF.h"
 #include "WindProfilerBarnCPU.h"
 #include "WindProfilerBarnGPU.h"
-#include "WindProfilerHRRR.h"
 
 #include "Building.h"
 #include "Canopy.h"
@@ -57,17 +54,13 @@
 
 #include "LocalMixing.h"
 #include "LocalMixingDefault.h"
-#include "LocalMixingNetCDF.h"
 #include "LocalMixingSerial.h"
 
-#include "DTEHeightField.h"
 #include "CutCell.h"
 #include "Wall.h"
 
 // #include "util/Mesh.h"
-#include "util/NetCDFInput.h"
 #include "util/QEStime.h"
-#include "HRRRData.h"
 
 #ifdef HAS_OPTIX
 
@@ -83,8 +76,8 @@
 #include "OptixRayTrace.h"
 #endif
 
-using namespace netCDF;
-using namespace netCDF::exceptions;
+class NetCDFInput;
+class HRRRData;
 
 struct WINDSDeviceData
 {
@@ -102,6 +95,11 @@ class WINDSInputData;
 class WINDSGeneralData
 {
 private:
+  void initializeWRFSensors(const WINDSInputData *WID);
+  void initializeTerrain(const WINDSInputData *WID);
+  void initializeShapefileBuildings(const WINDSInputData *WID);
+  void readCoefficients(const WINDSInputData *WID);
+
   WINDSGeneralData() : domain(1, 1, 1, 1, 1, 1) {}// do not allow empty domain to be created
 
 public:

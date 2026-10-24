@@ -40,9 +40,7 @@
 #include <vector>
 #include <chrono>
 #include <limits>
-#include <netcdf>
-
-#include "util/NetCDFOutput.h"
+class NetCDFOutput;
 
 /*
   Author: Fabien Margairaz

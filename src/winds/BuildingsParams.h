@@ -33,7 +33,7 @@
 #pragma once
 
 #include "util/ParseInterface.h"
-#include "util/ESRIShapefile.h"
+class ESRIShapefile;
 
 #include "Building.h"
 #include "RectangularBuilding.h"
@@ -68,39 +68,5 @@ public:
   ESRIShapefile *SHPData = nullptr; /**< :document this: */
   float heightFactor = 1.0; /**< :document this: */
 
-  virtual void parseValues()
-  {
-    buildings.clear();
-
-    parsePrimitive<float>(true, wallRoughness, "wallRoughness");
-    parsePrimitive<int>(true, rooftopFlag, "rooftopFlag");
-    parsePrimitive<int>(true, upwindCavityFlag, "upwindCavityFlag");
-    parsePrimitive<int>(true, streetCanyonFlag, "streetCanyonFlag");
-    parsePrimitive<int>(true, streetIntersectionFlag, "streetIntersectionFlag");
-    parsePrimitive<int>(true, wakeFlag, "wakeFlag");
-    parsePrimitive<int>(true, highRiseFlag, "highRiseFlag");
-    parsePrimitive<int>(true, sidewallFlag, "sidewallFlag");
-
-    parsePrimitive<int>(false, numBuildings, "numBuildings");
-    parsePrimitive<int>(false, numPolygonNodes, "numPolygonNodes");
-    parseMultiPolymorphs(false, buildings, Polymorph<Building, RectangularBuilding>("rectangularBuilding"));
-    parseMultiPolymorphs(false, buildings, Polymorph<Building, PolygonQUICBuilding>("QUICBuilding"));
-    parsePrimitive<float>(false, heightFactor, "heightFactor");
-
-    shpFile = "";
-    parsePrimitive<std::string>(false, shpFile, "SHPFile");
-    shpBuildingLayerName = "buildings";// defaults
-    parsePrimitive<std::string>(false, shpBuildingLayerName, "SHPBuildingLayer");
-    shpHeightField = "H";// default;
-    parsePrimitive<std::string>(false, shpHeightField, "SHPHeightField");
-
-    SHPData = nullptr;
-    if (shpFile != "") {
-      shpFile = QESfs::get_absolute_path(shpFile);
-      // Read polygon node coordinates and building height from shapefile
-      // SHPData = new ESRIShapefile(shpFile, shpTreeLayerName, shpPolygons, shpFeatures);
-      SHPData = new ESRIShapefile(shpFile, shpBuildingLayerName);
-      // std::cout << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
-    }
-  }
+  void parseValues() override;
 };

@@ -37,6 +37,8 @@
  */
 
 #include "Canopy.h"
+#include "util/QESFeatures.h"
+#include "util/UnsupportedFeature.h"
 
 #include "WINDSInputData.h"
 #include "WINDSGeneralData.h"
@@ -80,60 +82,11 @@ void Canopy::setCanopyElements(const WINDSInputData *WID, WINDSGeneralData *WGD)
   auto canopysetup_start = std::chrono::high_resolution_clock::now();// Start recording execution time
 
   if (WID->vegetationParams->SHPData) {
-
-    std::cout << "Creating canopies from shapefile..." << std::flush;
-
-    std::vector<Building *> poly_buildings;
-    // FM CLEANUP - NOT USED
-    // float corner_height, min_height;
-    std::vector<float> shpDomainSize(2), minExtent(2);
-    WID->vegetationParams->SHPData->getLocalDomain(shpDomainSize);
-    WID->vegetationParams->SHPData->getMinExtent(minExtent);
-
-    // printf("\tShapefile Origin = (%.6f,%.6f)\n", minExtent[0], minExtent[1]);
-
-    // If the shapefile is not covering the whole domain or the UTM coordinates
-    // of the QES domain is different than shapefile origin
-    if (WID->simParams->UTMx != 0.0 && WID->simParams->UTMy != 0.0) {
-      minExtent[0] -= (minExtent[0] - WID->simParams->UTMx);
-      minExtent[1] -= (minExtent[1] - WID->simParams->UTMy);
-    }
-
-    for (auto pIdx = 0u; pIdx < WID->vegetationParams->SHPData->m_polygons.size(); pIdx++) {
-
-      // convert the global polys to local domain coordinates
-      for (auto lIdx = 0u; lIdx < WID->vegetationParams->SHPData->m_polygons[pIdx].size(); lIdx++) {
-        WID->vegetationParams->SHPData->m_polygons[pIdx][lIdx].x_poly -= minExtent[0];
-        WID->vegetationParams->SHPData->m_polygons[pIdx][lIdx].y_poly -= minExtent[1];
-      }
-
-      // Setting base height for tree if there is a DEM file (TODO)
-      if (WID->simParams->DTE_heightField && WID->simParams->DTE_mesh) {
-        std::cerr << "Isolated tree from shapefile and DEM not implemented...\n";
-      } else {
-        // base_height.push_back(0.0);
-      }
-
-      for (auto lIdx = 0u; lIdx < WID->vegetationParams->SHPData->m_polygons[pIdx].size(); lIdx++) {
-        WID->vegetationParams->SHPData->m_polygons[pIdx][lIdx].x_poly += WID->simParams->halo_x;
-        WID->vegetationParams->SHPData->m_polygons[pIdx][lIdx].y_poly += WID->simParams->halo_y;
-      }
-
-      // Loop to create each of the polygon buildings read in from the shapefile
-      int cId = allCanopiesV.size();
-      // allCanopiesV.push_back(new CanopyIsolatedTree(WID, WGD, pIdx));
-      allCanopiesV.push_back(new CanopyIsolatedTree(WID->vegetationParams->SHPData->m_polygons[pIdx],
-                                                    WID->vegetationParams->SHPData->m_features["H"][pIdx],
-                                                    WID->vegetationParams->SHPData->m_features["D"][pIdx],
-                                                    0.0,
-                                                    WID->vegetationParams->SHPData->m_features["LAI"][pIdx],
-                                                    cId));
-      canopy_id.push_back(cId);
-      allCanopiesV[cId]->setPolyBuilding(WGD);
-      allCanopiesV[cId]->setCellFlags(WID, WGD, cId);
-      effective_height.push_back(allCanopiesV[cId]->height_eff);
-    }
-    std::cout << "[done]" << std::endl;
+#if QES_ENABLE_IO
+    initializeShapefileCanopies(WID, WGD);
+#else
+    throw qes::UnsupportedFeature("Shapefile canopies require QES_ENABLE_IO=ON");
+#endif
   }
 
   for (size_t i = 0; i < WID->vegetationParams->canopies.size(); i++) {

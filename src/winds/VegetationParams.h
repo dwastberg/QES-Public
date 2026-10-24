@@ -32,7 +32,7 @@
 #pragma once
 
 #include "util/ParseInterface.h"
-#include "util/ESRIShapefile.h"
+class ESRIShapefile;
 
 #include "Building.h"
 
@@ -63,35 +63,5 @@ public:
   std::vector<std::vector<polyVert>> shpPolygons; /**< :document this: */
   std::map<std::string, std::vector<float>> shpFeatures; /**< :document this: */
 
-  virtual void parseValues()
-  {
-    parsePrimitive<int>(false, wakeFlag, "wakeFlag");
-
-    // read the input data for canopies
-    parseMultiPolymorphs(false, canopies, Polymorph<Building, CanopyHomogeneous>("Homogeneous"));
-    parseMultiPolymorphs(false, canopies, Polymorph<Building, CanopyIsolatedTree>("IsolatedTree"));
-    parseMultiPolymorphs(false, canopies, Polymorph<Building, CanopyWindbreak>("Windbreak"));
-    parseMultiPolymorphs(false, canopies, Polymorph<Building, CanopyROC>("ROC"));
-
-    // add other type of canopy here
-
-    shpFile = "";
-    parsePrimitive<std::string>(false, shpFile, "SHPFile");
-
-    shpTreeLayerName = "trees";// defaults
-    parsePrimitive<std::string>(false, shpTreeLayerName, "SHPTreeLayer");
-
-    //
-    // Process ESRIShapeFile here, but leave extraction of poly
-    // building for later in WINDSGeneralData
-    //
-    SHPData = nullptr;
-    if (shpFile != "") {
-      shpFile = QESfs::get_absolute_path(shpFile);
-      // Read polygon node coordinates and building height from shapefile
-      // SHPData = new ESRIShapefile(shpFile, shpTreeLayerName, shpPolygons, shpFeatures);
-      SHPData = new ESRIShapefile(shpFile, shpTreeLayerName);
-      // std::cout << shpPolygons.size() << " " << shpTreeHeight.size() << std::endl;
-    }
-  }
+  void parseValues() override;
 };

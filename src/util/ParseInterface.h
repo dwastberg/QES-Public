@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include "QESFeatures.h"
+#include "UnsupportedFeature.h"
 
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -338,6 +340,8 @@ inline void ParseInterface::parseMultiPolymorphs(bool isReq, std::vector<T *> &e
 
 inline void ParseInterface::parseXML(const std::string fileName, const std::string root)
 {
+#if QES_ENABLE_IO
+
   pt::ptree t;
 
   try {
@@ -356,4 +360,8 @@ inline void ParseInterface::parseXML(const std::string fileName, const std::stri
   } else {
     throw(ParseException("Could not find root::" + root));
   }
+
+#else
+  throw qes::UnsupportedFeature("XML files require QES_ENABLE_IO=ON");
+#endif
 }

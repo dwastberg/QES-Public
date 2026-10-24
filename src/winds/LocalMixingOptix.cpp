@@ -35,6 +35,11 @@
  */
 
 #include "LocalMixingOptix.h"
+#include "util/QESFeatures.h"
+#include "util/UnsupportedFeature.h"
+#if QES_ENABLE_IO
+#include "DTEHeightField.h"
+#endif
 
 // These take care of the circular reference
 #include "WINDSInputData.h"
@@ -189,6 +194,7 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
   std::cout << "Forming Length Scale triangle mesh...\n";
   std::vector<Triangle *> allTriangles;
   if (WID->simParams->DTE_heightField) {
+#if QES_ENABLE_IO
 
     allTriangles.resize(WID->simParams->DTE_heightField->getTris().size());
 
@@ -198,6 +204,9 @@ void LocalMixingOptix::defineMixingLength(const WINDSInputData *WID, WINDSGenera
       allTriangles[i] = WID->simParams->DTE_heightField->getTris()[i];
     }
 
+#else
+    throw qes::UnsupportedFeature("Terrain mixing lengths require QES_ENABLE_IO=ON");
+#endif
   } else {
     allTriangles.insert(allTriangles.end(), groundTris.begin(), groundTris.end());
   }

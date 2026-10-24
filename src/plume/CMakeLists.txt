@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(qesPlumeCoreSources
   
@@ -50,7 +48,7 @@ SET(qesPlumeCoreSources
 
 ADD_LIBRARY(qesplumecore ${qesPlumeCoreSources})
 
-IF ($CACHE{HAS_CUDA_SUPPORT})
+IF (HAS_CUDA_SUPPORT)
   SET(qesPlumeGPUSources
     CUDA/Partition.cu
     CUDA/RandomGenerator.cpp
@@ -59,7 +57,10 @@ IF ($CACHE{HAS_CUDA_SUPPORT})
     CUDA/Concentration.cu)
   
   ADD_LIBRARY(qesplumegpu ${qesPlumeGPUSources})
-  TARGET_INCLUDE_DIRECTORIES(qesplumegpu PRIVATE {CUDAToolkit_INCLUDE_DIRS})
+  TARGET_INCLUDE_DIRECTORIES(qesplumegpu PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
   SET_TARGET_PROPERTIES(qesplumegpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-ENDIF ($CACHE{HAS_CUDA_SUPPORT})
+ENDIF (HAS_CUDA_SUPPORT)
 
+
+target_link_libraries(qesplumecore PUBLIC qeswindsio qesutilio)
+target_include_directories(qesplumecore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

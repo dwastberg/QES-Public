@@ -33,10 +33,7 @@
 
 #include "util/ParseInterface.h"
 #include <string>
-#include <netcdf>
 using namespace std;
-using namespace netCDF;
-using namespace netCDF::exceptions;
 
 /**
  * @class HRRRInput
@@ -54,15 +51,5 @@ public:
   int interpolationScheme = 0; /**< Interpolation scheme for Interpolation scheme for initial guess field (0-Barnes Scheme (default), 1-Nearest site, 2-Bilinear interpolation) */
   int stabilityClasses = 0; /**< Defining method for stability classes (0-No stability (default), 1-Pasquill-Gifford classes, 2-Monin-Obukhov length (using surface fluxes) */
 
-  virtual void parseValues()
-  {
-    // parseMultiPrimitives<std::string>(false, inputFields, "inputFields");
-    parsePrimitive<int>(false, interpolationScheme, "interpolationScheme");
-    parsePrimitive<int>(false, stabilityClasses, "stabilityClasses");
-    HRRRFile = "";
-    parsePrimitive<std::string>(false, HRRRFile, "HRRRFile");
-    if (HRRRFile != "") {
-      HRRRFile = QESfs::get_absolute_path(HRRRFile);
-    }
-  }
+  void parseValues() override;
 };

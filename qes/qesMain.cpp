@@ -39,6 +39,8 @@
 #include "qes/Domain.h"
 
 #include "winds/WINDSInputData.h"
+#include "winds/DTEHeightField.h"
+#include "winds/WRFInput.h"
 #include "winds/WINDSGeneralData.h"
 #include "winds/WINDSOutputVisualization.h"
 #include "winds/WINDSOutputWorkspace.h"

@@ -34,7 +34,6 @@
 
 #include <algorithm>
 #include "util/ParseInterface.h"
-#include "util/QESFileSystemHandler.h"
 #include "util/GIStool.h"
 #include "TimeSeries.h"
 
@@ -68,11 +67,7 @@ public:
   {
   }
 
-  Sensor(const std::string fileName)
-  {
-    // read and parse the XML
-    parseXML(fileName, "sensor");
-  }
+  explicit Sensor(const std::string fileName);
 
 
   ///@{

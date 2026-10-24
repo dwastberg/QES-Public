@@ -51,7 +51,7 @@ public:
   ~WINDSOutputWRF() {}
 
   // save function be call outside
-  void save(ptime);
+  void save(QEStime);
 
 private:
   WINDSGeneralData *WGD_;

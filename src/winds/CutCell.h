@@ -37,7 +37,7 @@
 #include "util/Vector3Float.h"
 #include "Edge.h"
 #include "Cell.h"
-#include "DTEHeightField.h"
+class DTEHeightField;
 
 class WINDSInputData;
 class WINDSGeneralData;

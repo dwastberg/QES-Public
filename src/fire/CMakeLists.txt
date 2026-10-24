@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
 SET( qesFireCoreSources
@@ -30,12 +28,15 @@ SET( qesFireCoreSources
 
 ADD_LIBRARY( qesfirecore ${qesFireCoreSources})
 
-IF ($CACHE{HAS_CUDA_SUPPORT})
+IF (HAS_CUDA_SUPPORT)
   ADD_LIBRARY(qesfiregpu
     CUDA/LSinitGlob.cu
     CUDA/LSinitGlob.h
     CUDA/PotentialGlobal.cu
     CUDA/PotentialGlobal.h)
-  TARGET_INCLUDE_DIRECTORIES(qesfiregpu PRIVATE {CUDAToolkit_INCLUDE_DIRS})
+  TARGET_INCLUDE_DIRECTORIES(qesfiregpu PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
   set_target_properties(qesfiregpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-ENDIF ($CACHE{HAS_CUDA_SUPPORT})
+ENDIF (HAS_CUDA_SUPPORT)
+
+target_link_libraries(qesfirecore PUBLIC qesplumecore qeswindsio)
+target_include_directories(qesfirecore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

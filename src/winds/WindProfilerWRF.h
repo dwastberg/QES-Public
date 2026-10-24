@@ -33,7 +33,6 @@
 #pragma once
 
 #include <vector>
-#include <netcdf>
 #include <cmath>
 
 #include "WindProfilerType.h"

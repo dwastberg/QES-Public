@@ -48,6 +48,7 @@
 #include "WINDSInputData.h"
 #include "WINDSGeneralData.h"
 #include "WindProfilerWRF.h"
+#include "WRFInput.h"
 
 
 void WindProfilerWRF::interpolateWindProfile(const WINDSInputData *WID, WINDSGeneralData *WGD)

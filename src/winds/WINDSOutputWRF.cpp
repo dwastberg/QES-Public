@@ -39,7 +39,7 @@ WINDSOutputWRF::WINDSOutputWRF(WINDSGeneralData *WGD, WRFInput *wrfInputData)
 
 // Save output at cell-centered values
 // void WINDSOutputWRF::save(float timeOut)
-void WINDSOutputWRF::save(ptime timeOut)
+void WINDSOutputWRF::save(QEStime timeOut)
 {
   wrf_->extractWind(WGD_);
 };

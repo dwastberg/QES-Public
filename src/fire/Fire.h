@@ -33,6 +33,7 @@
 #define FIRE_H
 
 #include "winds/WINDSInputData.h"
+#include "Fires.hpp"
 #include "winds/WINDSGeneralData.h"
 #include "FuelProperties.hpp"
 #include "util/Vector3Float.h"

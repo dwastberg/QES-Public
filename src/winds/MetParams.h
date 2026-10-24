@@ -70,14 +70,5 @@ public:
   /**
    * :document this:
    */
-  virtual void parseValues()
-  {
-    parsePrimitive<int>(false, z0_domain_flag, "z0_domain_flag");
-    parseMultiElements<Sensor>(false, sensors, "sensor");
-
-    parseMultiPrimitives<std::string>(false, sensorName, "sensorName");
-    for (auto i = 0u; i < sensorName.size(); i++) {
-      sensorName[i] = QESfs::get_absolute_path(sensorName[i]);
-    }
-  }
+  void parseValues() override;
 };
