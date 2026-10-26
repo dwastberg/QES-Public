@@ -83,8 +83,8 @@ __global__ void divergenceGlobal(float *d_u0, float *d_v0, float *d_w0, float *d
     d_R[id] = (-2 * pow(alpha1, 2.0))
               * (((d_e[id] * d_u0[icell_face + 1] - d_f[id] * d_u0[icell_face]) * dx)
                  + ((d_g[id] * d_v0[icell_face + nx] - d_h[id] * d_v0[icell_face]) * dy)
-                 + (d_m[id] * d_dz_array[k] * 0.5 * (d_dz_array[k] + d_dz_array[k + 1]) * d_w0[icell_face + nx * ny]
-                    - d_n[id] * d_w0[icell_face] * d_dz_array[k] * 0.5 * (d_dz_array[k] + d_dz_array[k - 1])));
+                 + (d_m[id] * 0.5 * (d_dz_array[k] + d_dz_array[k + 1]) * d_w0[icell_face + nx * ny]
+                    - d_n[id] * d_w0[icell_face] * 0.5 * (d_dz_array[k] + d_dz_array[k - 1])));
   }
 }
 

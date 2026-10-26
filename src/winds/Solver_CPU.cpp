@@ -65,6 +65,8 @@ SolveDiagnostics Solver_CPU::solve(WINDSGeneralData *WGD, const int &itermax)
         // icell_face = i + j * WGD->nx + k * WGD->nx * WGD->ny;
         icell_face = domain.face(i, j, k);
         // Calculate divergence of initial velocity field
+        // m/n already include 1/(dz * centre separation). Cancel only the
+        // centre separation here, retaining 1/dz for the vertical divergence.
         R[icell_cent] = (-2.0f * pow(alpha1, 2.0))
                         * (((WGD->e[icell_cent] * WGD->u0[domain.faceAdd(icell_face, 1, 0, 0)]
                              - WGD->f[icell_cent] * WGD->u0[icell_face])
@@ -72,9 +74,9 @@ SolveDiagnostics Solver_CPU::solve(WINDSGeneralData *WGD, const int &itermax)
                            + ((WGD->g[icell_cent] * WGD->v0[domain.faceAdd(icell_face, 0, 1, 0)]
                                - WGD->h[icell_cent] * WGD->v0[icell_face])
                               * domain.dy())
-                           + ((WGD->m[icell_cent] * domain.dz_array[k] * 0.5 * (domain.dz_array[k] + domain.dz_array[k + 1])
+                           + ((WGD->m[icell_cent] * 0.5 * (domain.dz_array[k] + domain.dz_array[k + 1])
                                  * WGD->w0[domain.faceAdd(icell_face, 0, 0, 1)]
-                               - WGD->n[icell_cent] * domain.dz_array[k] * 0.5f * (domain.dz_array[k] + domain.dz_array[k - 1])
+                               - WGD->n[icell_cent] * 0.5f * (domain.dz_array[k] + domain.dz_array[k - 1])
                                    * WGD->w0[icell_face])));
       }
     }
