@@ -55,6 +55,10 @@ public:
    */
   Domain(const int &nx, const int &ny, const int &nz, const float &dx, const float &dy, const float &dz);
 
+  // Physical layer thicknesses, bottom to top; dz() is their minimum.
+  Domain(int nx, int ny, float dx, float dy, const std::vector<float> &dz_layers);
+  bool verticallyUniform() const;
+
   /**
    * /brief Standard domain constructor.
    *
@@ -101,7 +105,7 @@ public:
   float dz() const { return domainData.dz; }
   float dxy() const { return domainData.dxy; }
 
-  std::tuple<float, float, float> getDomainSize() const { return { domainData.dx, domainData.dx, domainData.dz }; }
+  std::tuple<float, float, float> getDomainSize() const { return { domainData.dx, domainData.dy, domainData.dz }; }
   std::tuple<int, int, int> getDomainCellNum() const { return { domainData.nx, domainData.ny, domainData.nz }; }
   std::tuple<int, int, int> getBaseDomainCellNum() const { return { domainData.nx - 1, domainData.ny - 1, domainData.nz - 2 }; }
 
@@ -181,6 +185,7 @@ public:
 private:
   void defineHorizontalGrid();
   void defineVerticalGrid();
+  void validateVerticalGrid() const;
   void defineVerticalStretching(const float &);
   void defineVerticalStretching(const std::vector<float> &);
 

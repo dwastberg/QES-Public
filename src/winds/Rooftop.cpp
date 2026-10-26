@@ -53,7 +53,7 @@ void PolyBuilding::rooftop(const WINDSInputData *WID, WINDSGeneralData *WGD)
   // unused-variable:float wing_tol = 70 * M_PI / 180.0;// Rooftop criteria for delta wing parameterization
 
   auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const float dx = WGD->domain.dx(), dy = WGD->domain.dy();
 
   int rooftop_method = 0;
 
@@ -356,7 +356,7 @@ void PolyBuilding::rooftop(const WINDSInputData *WID, WINDSGeneralData *WGD)
                 k_shell_u = 0;
                 k_shell_v = 0;
                 // Looping through to find indices of the cell located at the top of the rooftop ellipse
-                for (auto k = k_end - 1; k < nz; k++) {
+                for (auto k = k_end - 1; k + 1 < static_cast<int>(WGD->domain.z.size()); k++) {
                   if ((z_ref_u + H + base_height) < WGD->domain.z[k + 1] && k_shell_u < 1) {
                     k_shell_u = k;
                   }

@@ -74,8 +74,19 @@ WINDSGeneralData::WINDSGeneralData(const WINDSInputData *WID, qes::Domain domain
     throw qes::InputError("Simulation parameters and meteorological inputs are required");
 
 #if !QES_ENABLE_IO
-  if (WID->simParams->meshTypeFlag != 0 || WID->simParams->verticalStretching != 0)
-    throw qes::UnsupportedFeature("The in-memory core currently requires stair-step buildings and a uniform grid");
+  if (WID->simParams->meshTypeFlag != 0)
+    throw qes::UnsupportedFeature("The in-memory core requires stair-step buildings");
+  const auto stretching = WID->simParams->verticalStretching;
+  if (stretching == 1) {
+    const auto &layers = WID->simParams->dz_value;
+    if (layers.size() != static_cast<std::size_t>(domain.nz() - 2)
+        || !std::equal(layers.begin(), layers.end(), domain.dz_array.begin() + 1))
+      throw qes::InputError("Declared vertical layers do not match the constructed domain");
+    if (WID->simParams->logLawFlag != 0)
+      throw qes::UnsupportedFeature("Wall log-law correction is not supported with explicit vertical layers");
+  } else if (stretching != 0 || !domain.verticallyUniform()) {
+    throw qes::InputError("Vertical grid mode does not match the constructed domain");
+  }
   if (WID->simParams->DTE_heightField || WID->simParams->DTE_mesh
       || !WID->simParams->demFile.empty() || !WID->simParams->wrfFile.empty()
       || WID->simParams->wrfInputData || WID->simParams->wrfCoupling

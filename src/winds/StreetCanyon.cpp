@@ -51,7 +51,7 @@
 void PolyBuilding::streetCanyon(WINDSGeneralData *WGD)
 {
   auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const float dx = WGD->domain.dx(), dy = WGD->domain.dy();
   float dxy = WGD->domain.dxy();
 
   float tol = 0.01 * M_PI / 180.0;

@@ -54,7 +54,7 @@ void PolyBuilding::upwindCavity(const WINDSInputData *WID, WINDSGeneralData *WGD
                                   // is in 10 degree of the perpendicular direction
 
   auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const float dx = WGD->domain.dx(), dy = WGD->domain.dy();
   float dxy = WGD->domain.dxy();
 
   float retarding_factor = 0.4;// In the outer region, velocities are reduced by 40% (Bagal et al. (2004))

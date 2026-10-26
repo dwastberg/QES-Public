@@ -55,7 +55,7 @@
 void PolyBuilding::polygonWake(const WINDSInputData *WID, WINDSGeneralData *WGD, int building_id)
 {
   auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const float dx = WGD->domain.dx(), dy = WGD->domain.dy();
   float dxy = WGD->domain.dxy();
 
   std::vector<float> Lr_face, Lr_node;

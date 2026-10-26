@@ -7,6 +7,24 @@
 
 using namespace qes;
 
+namespace {
+int layerCount(const std::vector<float> &layers)
+{
+  if (layers.size() < 2 || layers.size() > 10000)
+    throw InputError("Explicit vertical grid requires 2..10000 physical layers");
+  return static_cast<int>(layers.size());
+}
+
+float minimumLayer(const std::vector<float> &layers)
+{
+  layerCount(layers);
+  for (float h : layers)
+    if (!std::isfinite(h) || h <= 0)
+      throw InputError("Vertical layers must be positive and finite");
+  return *std::min_element(layers.begin(), layers.end());
+}
+}
+
 Domain::Domain(const int &nx, const int &ny, const int &nz, const float &dx, const float &dy, const float &dz)
 {
   if (nx < 1 || ny < 1 || nz < 1
@@ -30,16 +48,25 @@ Domain::Domain(const int &nx, const int &ny, const int &nz, const float &dx, con
   domainData.dz = dz;
   domainData.dxy = std::min(domainData.dx, domainData.dy);
 
-  // Definition of the grid
-  // ??? how to define the vertical grid with the different option
+  // Legacy uniform path; the explicit-layer overload replaces this spacing.
   defineVerticalStretching(domainData.dz);
-  /*if (WID->simParams->verticalStretching == 0) {// Uniform vertical grid
-    defineVerticalStretching(dz);
-  } else if (WID->simParams->verticalStretching == 1) {// Stretched vertical grid
-    defineVerticalStretching(WID->simParams->dz_value);// Read in custom dz values and set them to dz_array
-  }*/
   defineVerticalGrid();
+  validateVerticalGrid();
   defineHorizontalGrid();
+}
+
+Domain::Domain(int nx, int ny, float dx, float dy, const std::vector<float> &layers)
+  : Domain(nx, ny, layerCount(layers), dx, dy, minimumLayer(layers))
+{
+  defineVerticalStretching(layers);
+  defineVerticalGrid();
+  validateVerticalGrid();
+}
+
+bool Domain::verticallyUniform() const
+{
+  return !dz_array.empty() && std::all_of(dz_array.begin(), dz_array.end(),
+    [&](float h) { return h == dz_array.front(); });
 }
 
 Domain::Domain(const Vector3Int& domain, const Vector3Float& grid)
@@ -59,6 +86,8 @@ void Domain::defineVerticalStretching(const float &dz_value)
 
 void Domain::defineVerticalStretching(const std::vector<float> &dz_value)
 {
+  if (dz_value.size() != static_cast<std::size_t>(domainData.nz - 2))
+    throw InputError("Vertical layer count does not match the domain");
   // vertical grid (can be uniform or stretched)
   dz_array.resize(domainData.nz - 1, 0.0);
   // Stretched vertical grid
@@ -69,6 +98,22 @@ void Domain::defineVerticalStretching(const std::vector<float> &dz_value)
 
   float newDz = *std::min_element(dz_array.begin(), dz_array.end());// Set dz to minimum value of
   domainData.dz = newDz;
+}
+
+void Domain::validateVerticalGrid() const
+{
+  for (const auto *axis : {&z_face, &z})
+    for (std::size_t k = 0; k < axis->size(); ++k)
+      if (!std::isfinite((*axis)[k]) || (k && (*axis)[k] <= (*axis)[k - 1]))
+        throw InputError("Vertical coordinates must remain finite and strictly increasing in float32");
+  for (std::size_t k = 1; k < dz_array.size(); ++k) {
+    // Include both neighbours used by the solved bands and the mirrored ground.
+    for (std::size_t n : {k - 1, std::min(k + 1, dz_array.size() - 1)}) {
+      const float scale = dz_array[k] * (0.5f * (dz_array[k] + dz_array[n]));
+      if (!std::isfinite(scale) || scale <= 0 || !std::isfinite(1.0f / scale) || 1.0f / scale <= 0)
+        throw InputError("Vertical layers cannot form positive finite float32 solver coefficients");
+    }
+  }
 }
 
 void Domain::defineVerticalGrid()

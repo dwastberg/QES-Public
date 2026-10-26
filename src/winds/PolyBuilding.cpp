@@ -132,7 +132,7 @@ void PolyBuilding::setPolyBuilding(WINDSGeneralData *WGD)
  */
 void PolyBuilding::setCellFlags(const WINDSInputData *WID, WINDSGeneralData *WGD, int building_number)
 {
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const float dx = WGD->domain.dx(), dy = WGD->domain.dy();
 
   int mesh_type_flag = WID->simParams->meshTypeFlag;
   float ray_intersect;

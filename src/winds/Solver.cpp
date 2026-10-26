@@ -90,7 +90,9 @@ void Solver::validateSolve(const WINDSGeneralData *WGD, int iterations) const
 {
   if (!WGD || iterations < 1)
     throw qes::InputError("A prepared wind field and a positive iteration limit are required");
-  if (WGD->domain.getDomainCellNum() != domain.getDomainCellNum())
+  if (WGD->domain.getDomainCellNum() != domain.getDomainCellNum()
+      || WGD->domain.dx() != domain.dx() || WGD->domain.dy() != domain.dy()
+      || WGD->domain.dz_array != domain.dz_array)
     throw qes::InputError("Solver and wind-field domains differ");
   for (const auto *values : {&WGD->u0, &WGD->v0, &WGD->w0}) {
     if (values->size() != static_cast<size_t>(domain.numFaceCentered()))
