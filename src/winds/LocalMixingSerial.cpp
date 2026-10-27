@@ -28,410 +28,162 @@
  * along with QES-Winds. If not, see <https://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-/**
- * @file LocalMixingSerial.cpp
- * @brief :document this:
- * @sa LocalMixing
- */
+/** @file LocalMixingSerial.cpp */
 
-
-#include "util/QESLog.h"
 #include "LocalMixingSerial.h"
-
-// These take care of the circular reference
 #include "WINDSInputData.h"
 #include "WINDSGeneralData.h"
+#include "util/QESLog.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <vector>
 
 void LocalMixingSerial::defineMixingLength(const WINDSInputData *WID, WINDSGeneralData *WGD)
 {
-  auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-  auto [dx, dy, dz] = WGD->domain.getDomainSize();
+  const auto &d = WGD->domain;
+  const int cx = static_cast<int>(d.x.size());
+  const int cy = static_cast<int>(d.y.size());
+  const int cz = static_cast<int>(d.z.size());
+  const auto cell = [=](int i, int j, int k) { return i + cx * (j + cy * k); };
+  const auto solid = [&](int i, int j, int k) {
+    const int flag = WGD->icellflag[cell(i,j,k)];
+    return flag == 0 || flag == 2;
+  };
+  const double ground = *std::min_element(WGD->terrain.begin(), WGD->terrain.end());
 
-  // x-grid (face-center & cell-center)
-  x_fc.resize(nx, 0);
-  x_cc.resize(nx - 1, 0);
-
-  // y-grid (face-center & cell-center)
-  y_fc.resize(ny, 0);
-  y_cc.resize(ny - 1, 0);
-
-  // z-grid (face-center & cell-center)
-  z_fc.resize(nz, 0);
-  z_cc.resize(nz - 1, 0);
-
-  // x cell-center
-  x_cc = WGD->domain.x;
-  // x face-center (this assume constant dx for the moment, same as QES-winds)
-  for (int i = 1; i < nx - 1; i++) {
-    x_fc[i] = 0.5 * (WGD->domain.x[i - 1] + WGD->domain.x[i]);
-  }
-  x_fc[0] = x_fc[1] - dx;
-  x_fc[nx - 1] = x_fc[nx - 2] + dx;
-
-  // y cell-center
-  y_cc = WGD->domain.y;
-  // y face-center (this assume constant dy for the moment, same as QES-winds)
-  for (int i = 1; i < ny - 1; i++) {
-    y_fc[i] = 0.5 * (WGD->domain.y[i - 1] + WGD->domain.y[i]);
-  }
-  y_fc[0] = y_fc[1] - dy;
-  y_fc[ny - 1] = y_fc[ny - 2] + dy;
-
-  // z cell-center
-  z_cc = WGD->domain.z;
-  // z face-center (with ghost cell under the ground)
-  for (int i = 1; i < nz; i++) {
-    z_fc[i] = WGD->domain.z_face[i];
-  }
-  z_fc[0] = z_fc[1] - dz;
-
-  // find max height of solid objects in the domaine (max_z)
-  /*
-    [FM] this works only with the terrain
-    //float max_z=*std::max_element(WGD->terrain.begin(),WGD->terrain.end());
-    the following code works based on the icellflag -> works for both the
-    terrain and the buildings
-  */
-  float max_z = 0;
-  for (int i = 1; i < nx - 2; i++) {
-    for (int j = 1; j < ny - 2; j++) {
-      for (int k = 0; k < nz - 2; k++) {
-        int icell_cent = i + j * (nx - 1) + k * (nx - 1) * (ny - 1);
-        if ((WGD->icellflag[icell_cent] == 0 || WGD->icellflag[icell_cent] == 2) && max_z < z_cc[k]) {
-          max_z = z_cc[k];
-        }
+  // Seed the same physical cells as the height method, including horizontal
+  // boundary cells. Ghost and uncomputed top cells are left untouched.
+  double highest = ground;
+  for (int k = 1; k < cz - 1; ++k)
+    for (int j = 0; j < cy; ++j)
+      for (int i = 0; i < cx; ++i) {
+        if (!solid(i,j,k))
+          WGD->mixingLengths[cell(i,j,k)] = std::max(0.0,
+            static_cast<double>(d.z[k]) - WGD->terrain[i + cx * j]);
       }
-    }
-  }
+  // Include the last physical solid layer when finding the influence height.
+  // The ground ghost layer has top z=0 and is not an above-ground object.
+  for (int k = 1; k < cz; ++k)
+    for (int j = 0; j < cy; ++j)
+      for (int i = 0; i < cx; ++i)
+        if (solid(i,j,k)) highest = std::max(highest, static_cast<double>(d.z_face[k+1]));
 
-  // maximum height of local mixing length = 2*max z of objects
-  int max_height = nz - 2;
+  const double height = highest - ground;
+  if (height > 0) {
+    const double transition_start = ground + 3.0 * height;
+    const double transition_end = ground + 3.6 * height;
+    const double transition_width = transition_end - transition_start;
+    // The interval is in metres, independent of layer count or spacing. A flat
+    // empty domain bypasses this block, so it cannot create a zero denominator.
+    // Above transition_end, the seed is the final answer. Below it, a distance
+    // greater than radius cannot improve any computed cell's height seed.
+    double radius = 0;
+    for (int k = 1; k < cz - 1 && d.z[k] < transition_end; ++k)
+      radius = std::max(radius, static_cast<double>(d.z[k]) - ground);
 
-  for (int k = 0; k < nz - 1; ++k) {
-    if (z_cc[k] > 3.0 * max_z) {
-      max_height = k;
-      break;
-    }
-  }
-
-  // seeding Local Mixing Length with the verical distance to the terrain (up to 2*max_z)
-  for (int i = 1; i < nx - 2; i++) {
-    for (int j = 1; j < ny - 2; j++) {
-      for (int k = 0; k < nz - 2; k++) {
-        int icell_cent = i + j * (nx - 1) + k * (nx - 1) * (ny - 1);
-        if ((WGD->icellflag[icell_cent] != 0 && WGD->icellflag[icell_cent] != 2)) {
-          if (k < max_height) {
-            WGD->mixingLengths[icell_cent] = z_cc[k] - WGD->terrain[i + j * (nx - 1)];
-          } else {
-            WGD->mixingLengths[icell_cent] = z_cc[k];
-          }
-          if (WGD->mixingLengths[icell_cent] < 0.0) {
-            WGD->mixingLengths[icell_cent] = 0.0;
-          }
-        }
-      }
-    }
-  }
-
-  getMinDistWall(WGD, max_height);
-
-  // linear interpolation between 2.0*max_z and 2.4*max_z
-  qes::log::info() << "[MixLength] \t linear interp of mixing length" << std::endl;
-  int k1 = std::min(max_height - 1, nz - 2);
-  int k2 = std::min(k1 + k1 / 5, nz - 2);
-  for (int i = 1; i < nx - 2; ++i) {
-    for (int j = 1; j < ny - 2; ++j) {
-      int id1 = i + j * (nx - 1) + k1 * (nx - 1) * (ny - 1);
-      int id2 = i + j * (nx - 1) + k2 * (nx - 1) * (ny - 1);
-      // slope m = (L(z2)-L(z1))/(z2-z1)
-      float slope = (WGD->mixingLengths[id2] - WGD->mixingLengths[id1]) / (z_cc[k2] - z_cc[k1]);
-      // linear interp: L(z) = L(z1) + m*(z-z1)
-      for (int k = k1; k < k2; ++k) {
-        int id_cc = i + j * (nx - 1) + k * (nx - 1) * (ny - 1);
-        WGD->mixingLengths[id_cc] = WGD->mixingLengths[id1] + (z_cc[k] - z_cc[k1]) * slope;
-      }
-    }
-  }
-
-  if (WID->turbParams->save2file) {
-    saveMixingLength(WID, WGD);
-  }
-
-  return;
-}
-
-void LocalMixingSerial::getMinDistWall(WINDSGeneralData *WGD, int max_height)
-{
-
-  auto [nx, ny, nz] = WGD->domain.getDomainCellNum();
-
-  // defining the walls
-  for (int i = 1; i < nx - 2; i++) {
-    for (int j = 1; j < ny - 2; j++) {
-      for (int k = 1; k < nz - 2; k++) {
-        int icell_cent = i + j * (nx - 1) + k * (nx - 1) * (ny - 1);
-
-        if (WGD->icellflag[icell_cent] != 0 && WGD->icellflag[icell_cent] != 2) {
-          /// Wall below
-          if (WGD->icellflag[icell_cent - (nx - 1) * (ny - 1)] == 0 || WGD->icellflag[icell_cent - (nx - 1) * (ny - 1)] == 2) {
-            wall_below_indices.push_back(icell_cent);
-          }
-          /// Wall above
-          if (WGD->icellflag[icell_cent + (nx - 1) * (ny - 1)] == 0 || WGD->icellflag[icell_cent + (nx - 1) * (ny - 1)] == 2) {
-            wall_above_indices.push_back(icell_cent);
-          }
-          /// Wall in back
-          if (WGD->icellflag[icell_cent - 1] == 0 || WGD->icellflag[icell_cent - 1] == 2) {
-            wall_back_indices.push_back(icell_cent);
-          }
-          /// Wall in front
-          if (WGD->icellflag[icell_cent + 1] == 0 || WGD->icellflag[icell_cent + 1] == 2) {
-            wall_front_indices.push_back(icell_cent);
-          }
-          /// Wall on right
-          if (WGD->icellflag[icell_cent - (nx - 1)] == 0 || WGD->icellflag[icell_cent - (nx - 1)] == 2) {
-            wall_right_indices.push_back(icell_cent);
-          }
-          /// Wall on left
-          if (WGD->icellflag[icell_cent + (nx - 1)] == 0 || WGD->icellflag[icell_cent + (nx - 1)] == 2) {
-            wall_left_indices.push_back(icell_cent);
+    // QES uses uniform horizontal cells, with centre coordinates in x/y and
+    // explicit (possibly nonuniform) vertical faces. Keep face coordinates in
+    // double precision instead of rounding each distance update to float.
+    const auto faces = [](const std::vector<float> &centres, double spacing) {
+      std::vector<double> result(centres.size() + 1);
+      result.front() = centres.front() - 0.5 * spacing;
+      for (std::size_t n = 1; n < centres.size(); ++n)
+        result[n] = 0.5 * (static_cast<double>(centres[n-1]) + centres[n]);
+      result.back() = centres.back() + 0.5 * spacing;
+      return result;
+    };
+    const auto [dx,dy,dz] = d.getDomainSize();
+    const auto xf = faces(d.x, dx), yf = faces(d.y, dy);
+    using Point = std::array<double,3>;
+    const auto gap = [](double coordinate, double lower, double upper) {
+      return std::max({lower - coordinate, 0.0, coordinate - upper});
+    };
+    // All ranges are half open and restricted to turbulence's computed cells:
+    // 1..cx-2, 1..cy-2, 1..cz-2. Source-neighbour bounds below are independent.
+    const auto range = [](const std::vector<float> &axis, double lower, double upper) {
+      const auto first = axis.begin() + 1, last = axis.end() - 1;
+      return std::array<int,2>{
+        static_cast<int>(std::lower_bound(first,last,lower) - axis.begin()),
+        static_cast<int>(std::upper_bound(first,last,upper) - axis.begin())};
+    };
+    const auto apply_face = [&](const Point &lower, const Point &upper) {
+      // A horizontal face at/below the lowest terrain cannot shorten the
+      // vertical terrain seed. This also avoids propagating every flat-ground
+      // face across the domain.
+      if (lower[2] == upper[2] && upper[2] <= ground) return;
+      const auto kr = range(d.z, lower[2] - radius,
+                            std::min(upper[2] + radius, transition_end));
+      for (int k = kr[0]; k < kr[1]; ++k) {
+        if (d.z[k] >= transition_end) continue;
+        const double gz = gap(d.z[k], lower[2], upper[2]);
+        // Every local height seed is <= z - minimum terrain. Prune only when
+        // a face cannot beat that bound; no index-based influence cones remain.
+        const double reach2 = std::pow(static_cast<double>(d.z[k]) - ground, 2) - gz * gz;
+        if (reach2 <= 0) continue;
+        const double reach = std::sqrt(reach2);
+        const auto jr = range(d.y, lower[1] - reach, upper[1] + reach);
+        for (int j = jr[0]; j < jr[1]; ++j) {
+          const double gy = gap(d.y[j], lower[1], upper[1]);
+          const double xreach2 = reach2 - gy * gy;
+          if (xreach2 <= 0) continue;
+          const double xreach = std::sqrt(xreach2);
+          const auto ir = range(d.x, lower[0] - xreach, upper[0] + xreach);
+          for (int i = ir[0]; i < ir[1]; ++i) {
+            if (solid(i,j,k)) continue;
+            const double gx = gap(d.x[i], lower[0], upper[0]);
+            const double distance2 = gx * gx + gy * gy + gz * gz;
+            double &length = WGD->mixingLengths[cell(i,j,k)];
+            if (distance2 < length * length) length = std::sqrt(distance2);
           }
         }
       }
-    }
-  }
+    };
 
-  qes::log::info() << "[MixLength] \t cells with wall below: " << wall_below_indices.size() << std::endl;
-  qes::log::info() << "[MixLength] \t cells with wall above: " << wall_above_indices.size() << std::endl;
-  qes::log::info() << "[MixLength] \t cells with wall in the front: " << wall_front_indices.size() << std::endl;
-  qes::log::info() << "[MixLength] \t cells with wall in the back: " << wall_back_indices.size() << std::endl;
-  qes::log::info() << "[MixLength] \t cells with wall to the right: " << wall_right_indices.size() << std::endl;
-  qes::log::info() << "[MixLength] \t cells with wall to the left: " << wall_left_indices.size() << std::endl;
+    // Each exposed solid/fluid interface is an axis-aligned rectangle. Use the
+    // same distance update for all six orientations, including undersides.
+    // Neighbours must exist in the actual cell arrays; domain edges are not
+    // solid walls. Ground-ghost cells can supply their upward interface only.
+    for (int k = 0; k < cz; ++k)
+      for (int j = 0; j < cy; ++j)
+        for (int i = 0; i < cx; ++i) {
+          if (!solid(i,j,k)) continue;
+          Point lower{xf[i], yf[j], d.z_face[k]};
+          Point upper{xf[i+1], yf[j+1], d.z_face[k+1]};
+          for (int axis = 0; axis < 3; ++axis)
+            for (int sign : {-1, 1}) {
+              std::array<int,3> neighbour{i,j,k};
+              neighbour[axis] += sign;
+              if (neighbour[0] < 0 || neighbour[0] >= cx
+                  || neighbour[1] < 0 || neighbour[1] >= cy
+                  || neighbour[2] < 1 || neighbour[2] >= cz
+                  || solid(neighbour[0],neighbour[1],neighbour[2])) continue;
+              auto face_lower = lower, face_upper = upper;
+              face_lower[axis] = face_upper[axis] = sign < 0 ? lower[axis] : upper[axis];
+              apply_face(face_lower, face_upper);
+            }
+        }
 
-  // apply mixing length to the cells with wall below
-  for (size_t id = 0; id < wall_below_indices.size(); id++) {
-
-    int id_cc = wall_below_indices[id];
-    int idxp = id_cc - (nx - 1) * (ny - 1) + 1;
-    int idxm = id_cc - (nx - 1) * (ny - 1) - 1;
-    int idyp = id_cc - (nx - 1) * (ny - 1) + (nx - 1);
-    int idym = id_cc - (nx - 1) * (ny - 1) - (nx - 1);
-
-    int k = (int)(id_cc / ((nx - 1) * (ny - 1)));
-    int j = (int)((id_cc - k * (nx - 1) * (ny - 1)) / (nx - 1));
-    int i = id_cc - j * (nx - 1) - k * (nx - 1) * (ny - 1);
-    int maxdist = max_height - k;
-
-    WGD->mixingLengths[id_cc] = z_cc[k] - z_fc[k];
-
-    float x1 = x_cc[i];
-    float y1 = y_cc[j];
-    float z1 = z_fc[k];
-
-    if (WGD->icellflag[idxp] == 2 && WGD->icellflag[idxm] == 2 && WGD->icellflag[idyp] == 2 && WGD->icellflag[idym] == 2) {
-      // terrain on all 4 corner -> nothing to do
-    } else if (WGD->icellflag[idxp] == 0 && WGD->icellflag[idxm] == 0 && WGD->icellflag[idyp] == 0 && WGD->icellflag[idym] == 0) {
-      // building on all 4 corner -> propagate verically
-      for (int kk = 0; kk <= maxdist; kk++) {
-        int id = i + j * (nx - 1) + (kk + k) * (nx - 1) * (ny - 1);
-        float x2 = x_cc[i];
-        float y2 = y_cc[j];
-        float z2 = z_cc[kk + k];
-        float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-        WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
-      }
-    } else {
-      // propagate in all direction
-      for (int kk = 0; kk <= maxdist; kk++) {
-
-        // propagate to the whole domaine
-        int i1 = std::max(i - maxdist - kk, 1);
-        int i2 = std::min(i + maxdist + kk, nx - 2);
-        int j1 = std::max(j - maxdist - kk, 1);
-        int j2 = std::min(j + maxdist + kk, ny - 2);
-
-        for (int jj = j1; jj <= j2; jj++) {
-          for (int ii = i1; ii <= i2; ii++) {
-            int id = ii + jj * (nx - 1) + (kk + k) * (nx - 1) * (ny - 1);
-            float x2 = x_cc[ii];
-            float y2 = y_cc[jj];
-            float z2 = z_cc[kk + k];
-            float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-            WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
+    // Blend the minimum distance with each cell's terrain-relative height,
+    // using its physical z coordinate. This is a model transition, not an
+    // exact nearest-wall distance in the transition band or far field.
+    if (transition_width > 0)
+      for (int k = 1; k < cz - 1; ++k) {
+        if (d.z[k] <= transition_start || d.z[k] >= transition_end) continue;
+        const double weight = (d.z[k] - transition_start) / transition_width;
+        for (int j = 1; j < cy - 1; ++j)
+          for (int i = 1; i < cx - 1; ++i) {
+            if (solid(i,j,k)) continue;
+            const double seed = std::max(0.0,
+              static_cast<double>(d.z[k]) - WGD->terrain[i + cx * j]);
+            double &length = WGD->mixingLengths[cell(i,j,k)];
+            length = std::min(seed, length + weight * (seed - length));
           }
-        }
       }
-    }
+    qes::log::info() << "[MixLength] \t serial grid-face distances; transition "
+                     << transition_start << " to " << transition_end << " m" << std::endl;
   }
-  qes::log::info() << "[MixLength] \t cells with wall below: DONE " << std::endl;
 
-  /// apply mixing length to the cells with wall in back
-  for (size_t id = 0; id < wall_back_indices.size(); id++) {
-
-    int id_cc = wall_back_indices[id];
-    int k = (int)(id_cc / ((nx - 1) * (ny - 1)));
-    int j = (int)((id_cc - k * (nx - 1) * (ny - 1)) / (nx - 1));
-    int i = id_cc - j * (nx - 1) - k * (nx - 1) * (ny - 1);
-    int maxdist = 0;
-    if (i + k < nx - 1) {
-      maxdist = k;
-    } else {
-      maxdist = nx - 1 - i;
-    }
-
-    WGD->mixingLengths[id_cc] = x_cc.at(i) - x_fc.at(i);
-
-    float x1 = x_fc[i];
-    float y1 = y_cc[j];
-    float z1 = z_cc[k];
-
-    for (int ii = 0; ii <= maxdist; ii++) {
-
-      // int k1 = std::max(k,0);
-      // int k2 = std::min(k+ii+1,nz-2);
-      int j1 = std::max(j - ii, 0);
-      int j2 = std::min(j + ii + 1, ny - 2);
-      int k1(k), k2(k);
-
-
-      for (int jj = j1; jj <= j2; jj++) {
-        for (int kk = k1; kk <= k2; kk++) {
-          int id = (i + ii) + jj * (nx - 1) + (kk) * (nx - 1) * (ny - 1);
-          float x2 = x_cc[ii + i];
-          float y2 = y_cc[jj];
-          float z2 = z_cc[kk];
-          float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-          WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
-        }
-      }
-    }
-  }
-  qes::log::info() << "[MixLength] \t cells with wall in the  back: DONE " << std::endl;
-
-  /// apply mixing length to the cells with wall in front
-  for (size_t id = 0; id < wall_front_indices.size(); id++) {
-
-    int id_cc = wall_front_indices[id];
-    int k = (int)(id_cc / ((nx - 1) * (ny - 1)));
-    int j = (int)((id_cc - k * (nx - 1) * (ny - 1)) / (nx - 1));
-    int i = id_cc - j * (nx - 1) - k * (nx - 1) * (ny - 1);
-    int maxdist = 0;
-    if (i - k > 0) {
-      maxdist = k;
-    } else {
-      maxdist = i;
-    }
-
-    WGD->mixingLengths[id_cc] = x_fc.at(i + 1) - x_cc.at(i);
-
-    float x1 = x_fc[i + 1];
-    float y1 = y_cc[j];
-    float z1 = z_cc[k];
-
-    for (int ii = 0; ii >= -maxdist; ii--) {
-
-      // int k1 = std::max(k,0);
-      // int k2 = std::min(k-ii+1,nz-2);
-      int j1 = std::max(j + ii, 0);
-      int j2 = std::min(j - ii + 1, ny - 2);
-      int k1(k), k2(k);
-
-      for (int jj = j1; jj <= j2; jj++) {
-        for (int kk = k1; kk <= k2; kk++) {
-          int id = (i + 1 + ii) + jj * (nx - 1) + (kk) * (nx - 1) * (ny - 1);
-          float x2 = x_cc[i + ii + 1];
-          float y2 = y_cc[jj];
-          float z2 = z_cc[kk];
-          float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-          WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
-        }
-      }
-    }
-  }
-  qes::log::info() << "[MixLength] \t cells with wall in the front: DONE " << std::endl;
-
-  /// apply mixing length to the cells with wall to right
-  for (size_t id = 0; id < wall_right_indices.size(); id++) {
-
-    int id_cc = wall_right_indices[id];
-    int k = (int)(id_cc / ((nx - 1) * (ny - 1)));
-    int j = (int)((id_cc - k * (nx - 1) * (ny - 1)) / (nx - 1));
-    int i = id_cc - j * (nx - 1) - k * (nx - 1) * (ny - 1);
-    int maxdist = 0;
-    if (j + k < ny - 1) {
-      maxdist = k;
-    } else {
-      maxdist = ny - 1 - j;
-    }
-
-    WGD->mixingLengths[id_cc] = y_cc[j] - y_fc[j];
-
-    float x1 = x_cc[i];
-    float y1 = y_fc[j];
-    float z1 = z_cc[k];
-
-    for (int jj = 0; jj <= maxdist; jj++) {
-
-      // int k1 = std::max(k,0);
-      // int k2 = std::min(k+jj+1,nz-2);
-      int i1 = std::max(i - jj, 0);
-      int i2 = std::min(i + jj + 1, nx - 2);
-      int k1(k), k2(k);
-
-      for (int ii = i1; ii <= i2; ii++) {
-        for (int kk = k1; kk <= k2; kk++) {
-          int id = ii + (j + jj) * (nx - 1) + (kk) * (nx - 1) * (ny - 1);
-          float x2 = x_cc[ii];
-          float y2 = y_cc[j + jj];
-          float z2 = z_cc[kk];
-          float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-          WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
-        }
-      }
-    }
-  }
-  qes::log::info() << "[MixLength] \t cells with wall to the right: DONE " << std::endl;
-
-  /// apply mixing length to the cells with wall to left
-  for (size_t id = 0; id < wall_left_indices.size(); id++) {
-
-    int id_cc = wall_left_indices[id];
-    int k = (int)(id_cc / ((nx - 1) * (ny - 1)));
-    int j = (int)((id_cc - k * (nx - 1) * (ny - 1)) / (nx - 1));
-    int i = id_cc - j * (nx - 1) - k * (nx - 1) * (ny - 1);
-    int maxdist = 0;
-    if (j - k > 0) {
-      maxdist = k;
-    } else {
-      maxdist = j;
-    }
-
-    WGD->mixingLengths[id_cc] = y_fc[j + 1] - y_cc[j];
-
-    float x1 = x_cc[i];
-    float y1 = y_fc[j + 1];
-    float z1 = z_cc[k];
-
-    for (int jj = 0; jj >= -maxdist; jj--) {
-
-      // int k1 = std::max(k,0);
-      // int k2 = std::min(k-jj+1,nz-2);
-      int i1 = std::max(i + jj, 0);
-      int i2 = std::min(i - jj + 1, nx - 2);
-
-      int k1(k), k2(k);
-
-      for (int ii = i1; ii <= i2; ii++) {
-        for (int kk = k1; kk <= k2; kk++) {
-          int id = ii + (j + 1 + jj) * (nx - 1) + (kk) * (nx - 1) * (ny - 1);
-          float x2 = x_cc[ii];
-          float y2 = y_cc[j + 1 + jj];
-          float z2 = z_cc[kk];
-          float dist = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2) + pow((z2 - z1), 2));
-          WGD->mixingLengths[id] = std::min(dist, static_cast<float>(WGD->mixingLengths[id]));
-        }
-      }
-    }
-  }
-  qes::log::info() << "[MixLength] \t cells with wall to the left: DONE " << std::endl;
+  if (WID->turbParams->save2file) saveMixingLength(WID, WGD);
 }
