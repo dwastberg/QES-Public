@@ -39,6 +39,8 @@
 #include "util/QESFeatures.h"
 #include "util/UnsupportedFeature.h"
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <sstream>
 #if QES_ENABLE_IO
 #include "LocalMixingNetCDF.h"
@@ -520,9 +522,50 @@ void TURBGeneralData::getTurbulentViscosity()
   }
 }
 
+std::array<double, 2> TURBGeneralData::rotationDirection(int i, int j)
+{
+  const float height = 15.0f + m_WGD->terrain[domain.cell2d(i, j)];
+  const int reference = static_cast<int>(std::lower_bound(domain.z_face.begin(), domain.z_face.end(), height)
+                                         - domain.z_face.begin());
+  std::array<double, 2> direction;
+  const auto sample = [&](int k) {
+    // The top face has no cell flag: candidates must be physical cell levels.
+    if (k < 1 || k > domain.nz() - 2) return false;
+    const int flag = m_WGD->icellflag[domain.cell(i, j, k)];
+    if (flag == 0 || flag == 2) return false;
+    const double u = m_WGD->u[domain.face(i, j, k)], v = m_WGD->v[domain.face(i, j, k)];
+    const double speed = std::hypot(u, v);
+    if (!std::isfinite(speed) || speed == 0) return false;
+    direction = {u / speed, v / speed};
+    return true;
+  };
+  if (sample(reference)) return direction;
+
+  ++rotationFallbackColumns;
+  // Horizontal velocities live at z cell centres. Select alternatives by
+  // those heights, retaining the original reference index when it is usable.
+  // Nearest fluid centre wins; prefer the higher level on a tie.
+  int above = static_cast<int>(std::lower_bound(domain.z.begin() + 1, domain.z.end(), height)
+                               - domain.z.begin());
+  int below = above - 1;
+  while (above <= domain.nz() - 2 || below >= 1) {
+    const bool higher = above <= domain.nz() - 2
+      && (below < 1 || domain.z[above] - height <= height - domain.z[below]);
+    const int candidate = higher ? above++ : below--;
+    if (sample(candidate)) return direction;
+  }
+  // No measured horizontal direction exists in this column (e.g. calm wind).
+  // The fixed x axis keeps zero stresses finite and is explicitly diagnosed.
+  return {1.0, 0.0};
+}
+
 void TURBGeneralData::stressTensor()
 {
   float tkeBound = turbUpperBound * uStar * uStar;
+  rotationFallbackColumns = 0;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  std::vector<std::array<double, 2>> directions(
+    (domain.nx() - 1) * (domain.ny() - 1), {nan, nan});
 
   double R11, R12, R13, R21, R22, R23, R31, R32, R33;// rotation matrix
   double I11, I12, I13, I21, I22, I23, I31, I32, I33;// inverse of rotation matrix
@@ -568,39 +611,30 @@ void TURBGeneralData::stressTensor()
     txz[cellID] = -2.0 * (NU_T * Sxz);
     tyz[cellID] = -2.0 * (NU_T * Syz);
 
-    // ROTATE INTO SENSOR-ALIGNED
+    auto &direction = directions[domain.cell2d(i, j)];
+    if (!std::isfinite(direction[0])) direction = rotationDirection(i, j);
+    const auto [c, s] = direction;
 
-    // float sensorDir = WID->metParams->sensors[i]->TS[0]->site_wind_dir[0];
-
-    int k_ref = 0;
-    float refHeight = 15.0;// reference height for rotation wind direction is arbitrarily set to 15m above terrain
-    while (domain.z_face[k_ref] < (refHeight + m_WGD->terrain[domain.cell2d(i, j)])) {
-      k_ref += 1;
-    }
-
-    // int localRef = i + j * nx + k_ref * nx * ny;
-    long localRef = domain.face(i, j, k_ref);
-    float dirRot = atan2(m_WGD->v[localRef], m_WGD->u[localRef]);// radians on the unit circle
-
-    // Rotation matrix
-    R11 = cos(dirRot);
-    R12 = -sin(dirRot);
+    // Q has columns (streamwise, crosswind, vertical) in Cartesian coordinates.
+    // Wind-aligned stress is Q^T * tau * Q, so R = Q^T here.
+    R11 = c;
+    R12 = s;
     R13 = 0.0;
-    R21 = sin(dirRot);
-    R22 = cos(dirRot);
+    R21 = -s;
+    R22 = c;
     R23 = 0.0;
     R31 = 0.0;
     R32 = 0.0;
     R33 = 1.0;
 
     I11 = R11;
-    I12 = R12;
-    I13 = R13;
-    I21 = R21;
+    I12 = R21;
+    I13 = R31;
+    I21 = R12;
     I22 = R22;
-    I23 = R23;
-    I31 = R31;
-    I32 = R32;
+    I23 = R32;
+    I31 = R13;
+    I32 = R23;
     I33 = R33;
 
     double txx_temp = txx[cellID];
@@ -610,10 +644,7 @@ void TURBGeneralData::stressTensor()
     double tyz_temp = tyz[cellID];
     double tzz_temp = tzz[cellID];
 
-    // Invert rotation matrix
-    invert3(I11, I12, I13, I21, I22, I23, I31, I32, I33);
-
-
+    // Orthogonal inverse is the transpose: I = Q.
     matMult(txx_temp, txy_temp, txz_temp, txy_temp, tyy_temp, tyz_temp, txz_temp, tyz_temp, tzz_temp, I11, I12, I13, I21, I22, I23, I31, I32, I33, P11, P12, P13, P21, P22, P23, P31, P32, P33);
 
     matMult(R11, R12, R13, R21, R22, R23, R31, R32, R33, P11, P12, P13, P21, P22, P23, P31, P32, P33, txx_temp, txy_temp, txz_temp, txy_temp, tyy_temp, tyz_temp, txz_temp, tyz_temp, tzz_temp);
@@ -623,31 +654,26 @@ void TURBGeneralData::stressTensor()
     tzz_temp = fabs(sigWConst * tzz_temp);
 
 
-    // DEROTATE
-    // Rotation matrix
-    dirRot = -dirRot;
-    R11 = cos(dirRot);
-    R12 = -sin(dirRot);
+    // Return to Cartesian coordinates: Q * tau_wind * Q^T.
+    R11 = c;
+    R12 = -s;
     R13 = 0.0;
-    R21 = sin(dirRot);
-    R22 = cos(dirRot);
+    R21 = s;
+    R22 = c;
     R23 = 0;
     R31 = 0;
     R32 = 0;
     R33 = 1;
 
     I11 = R11;
-    I12 = R12;
-    I13 = R13;
-    I21 = R21;
+    I12 = R21;
+    I13 = R31;
+    I21 = R12;
     I22 = R22;
-    I23 = R23;
-    I31 = R31;
-    I32 = R32;
+    I23 = R32;
+    I31 = R13;
+    I32 = R23;
     I33 = R33;
-
-    // Invert rotation matrix
-    invert3(I11, I12, I13, I21, I22, I23, I31, I32, I33);
 
     matMult(txx_temp, txy_temp, txz_temp, txy_temp, tyy_temp, tyz_temp, txz_temp, tyz_temp, tzz_temp, I11, I12, I13, I21, I22, I23, I31, I32, I33, P11, P12, P13, P21, P22, P23, P31, P32, P33);
 

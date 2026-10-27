@@ -33,6 +33,7 @@
 #pragma once
 
 #include <math.h>
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -72,6 +73,7 @@ public:
   float getRoughnessLength() const noexcept { return z0d; }
   float getDisplacementHeight() const noexcept { return d0d; }
   float getUpperBound() const noexcept { return turbUpperBound; }
+  std::size_t getRotationFallbackColumns() const noexcept { return rotationFallbackColumns; }
 
   void loadNetCDFData(int);
   void divergenceStress();
@@ -226,6 +228,8 @@ private:
   TURBGeneralData();
 
   void allocateMemory();
+  std::array<double, 2> rotationDirection(int i, int j);
+  std::size_t rotationFallbackColumns = 0;
   // store the wall classes
   std::vector<std::unique_ptr<TURBWall>> wallVec;
 
