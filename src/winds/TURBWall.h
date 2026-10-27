@@ -62,8 +62,7 @@ class TURBWall
 public:
   TURBWall()
   {}
-  ~TURBWall()
-  {}
+  virtual ~TURBWall() = default;
 
   virtual void setWallsVelocityDeriv(WINDSGeneralData *, TURBGeneralData *) = 0;
   virtual void setWallsStressDeriv(WINDSGeneralData *,

@@ -38,6 +38,8 @@
 #include "TURBGeneralData.h"
 #include "util/QESFeatures.h"
 #include "util/UnsupportedFeature.h"
+#include <algorithm>
+#include <sstream>
 #if QES_ENABLE_IO
 #include "LocalMixingNetCDF.h"
 #endif
@@ -51,6 +53,30 @@ TURBGeneralData::TURBGeneralData(const WINDSInputData *WID, WINDSGeneralData *WG
   qes::log::info() << "-------------------------------------------------------------------" << std::endl;
   qes::log::info() << "[QES-TURB]\t Initialization of turbulence model...\n";
   m_WGD = WGD;
+
+  if (!WID || !WID->turbParams)
+    throw qes::InputError("Turbulence requires turbulence parameters");
+  const int method = WID->turbParams->methodLocalMixing;
+  bool supported = method == 0 || method == 1;
+#ifdef HAS_OPTIX
+  supported = supported || method == 3;
+#endif
+#if QES_ENABLE_IO
+  supported = supported || method == 4;
+#endif
+  if (!supported) {
+    std::ostringstream message;
+    message << "Unsupported turbulence mixing-length method: " << method;
+    throw qes::InputError(message.str());
+  }
+  const float terrain_top = WID->simParams->DTE_heightField && !WGD->terrain.empty()
+    ? *std::max_element(WGD->terrain.begin(), WGD->terrain.end()) : 0.0f;
+  if (domain.z_face.back() < 15.0f + terrain_top) {
+    std::ostringstream message;
+    message << "Turbulence domain top must reach at least " << 15.0f + terrain_top
+            << " m for the 15 m rotation reference";
+    throw qes::InputError(message.str());
+  }
 
   allocateMemory();
 
@@ -104,8 +130,8 @@ TURBGeneralData::TURBGeneralData(const WINDSInputData *WID, WINDSGeneralData *WG
 
   // definition of the solid wall for loglaw
   qes::log::info() << "[QES-TURB]\t Defining Solid Walls...\n";
-  wallVec.push_back(new TURBWallBuilding(WID, m_WGD, this));
-  wallVec.push_back(new TURBWallTerrain(WID, m_WGD, this));
+  wallVec.push_back(std::make_unique<TURBWallBuilding>(WID, m_WGD, this));
+  wallVec.push_back(std::make_unique<TURBWallTerrain>(WID, m_WGD, this));
   // qes::log::info() << "\t\t Walls Defined...\n";
 
   // mixing length
@@ -114,25 +140,19 @@ TURBGeneralData::TURBGeneralData(const WINDSInputData *WID, WINDSGeneralData *WG
   auto mlStartTime = std::chrono::high_resolution_clock::now();
   if (WID->turbParams->methodLocalMixing == 0) {
     qes::log::info() << "[QES-TURB]\t Default Local Mixing Length...\n";
-    localMixing = new LocalMixingDefault();
+    localMixing = std::make_unique<LocalMixingDefault>();
   } else if (WID->turbParams->methodLocalMixing == 1) {
     qes::log::info() << "[QES-TURB]\t Computing Local Mixing Length using serial code...\n";
-    localMixing = new LocalMixingSerial();
-  } else if (WID->turbParams->methodLocalMixing == 2) {
-    /*******Add raytrace code here********/
-    qes::log::info() << "[QES-TURB]\t Computing mixing length scales..." << std::endl;
-    // WID->simParams->DTE_mesh->calculateMixingLength(nx, ny, nz, dx, dy, dz, WGD->icellflag, WGD->mixingLengths);
+    localMixing = std::make_unique<LocalMixingSerial>();
   } else if (WID->turbParams->methodLocalMixing == 3) {
-    localMixing = new LocalMixingOptix();
+    localMixing = std::make_unique<LocalMixingOptix>();
   } else if (WID->turbParams->methodLocalMixing == 4) {
     qes::log::info() << "[QES-TURB]\t Loading Local Mixing Length data form NetCDF...\n";
 #if QES_ENABLE_IO
-    localMixing = new LocalMixingNetCDF();
+    localMixing = std::make_unique<LocalMixingNetCDF>();
 #else
     throw qes::UnsupportedFeature("NetCDF mixing lengths require QES_ENABLE_IO=ON");
 #endif
-  } else {
-    // this should not happen (checked in TURBParams)
   }
 
   localMixing->defineMixingLength(WID, m_WGD);
@@ -350,20 +370,20 @@ void TURBGeneralData::run()
 
 void TURBGeneralData::frictionVelocity()
 {
+  // The lower-bound face identifies the reference cell. That cell and its
+  // upper w face must both exist, including when zRef is in the top cell.
+  const auto reference = std::lower_bound(domain.z_face.begin(), domain.z_face.end(), zRef);
+  const auto reference_index = reference - domain.z_face.begin();
+  if (reference == domain.z_face.end() || reference_index > domain.nz() - 2) {
+    std::ostringstream message;
+    message << "Turbulence reference height " << zRef
+            << " m has no sampleable layer below domain top " << domain.z_face.back() << " m";
+    throw qes::InputError(message.str());
+  }
+  const int k = static_cast<int>(reference_index);
   float nVal = 0.0, uSum = 0.0;
   for (int j = 0; j < domain.ny() - 1; j++) {
     for (int i = 0; i < domain.nx() - 1; i++) {
-      // search the vector for the first element with value 42
-      std::vector<float>::iterator itr = std::lower_bound(domain.z_face.begin(), domain.z_face.end(), zRef);
-      int k;
-      if (itr != domain.z_face.end()) {
-        k = itr - domain.z_face.begin();
-        // qes::log::info() << "\t\t\t ref height = "<< zRef << " kRef = "<< kRef << std::endl;
-      } else {
-        qes::log::error() << "[ERROR] Turbulence model : reference height is outside the domain" << std::endl;
-        { std::ostringstream message; message << "\t Reference height zRef = " << zRef << " m." << std::endl; throw qes::InputError(message.str()); }
-      }
-
       // int cellID = i + j * (nx - 1) + k * (nx - 1) * (ny - 1);
       // int faceID = i + j * (nx) + k * (nx) * (ny);
       long cellID = domain.cell(i, j, k);

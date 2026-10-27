@@ -33,6 +33,7 @@
 #pragma once
 
 #include <math.h>
+#include <memory>
 #include <vector>
 
 #include "qes/Domain.h"
@@ -64,6 +65,13 @@ public:
   {}
 
   virtual void run();
+
+  float getReferenceHeight() const noexcept { return zRef; }
+  float getReferenceSpeed() const noexcept { return uRef; }
+  float getFrictionVelocity() const noexcept { return uStar; }
+  float getRoughnessLength() const noexcept { return z0d; }
+  float getDisplacementHeight() const noexcept { return d0d; }
+  float getUpperBound() const noexcept { return turbUpperBound; }
 
   void loadNetCDFData(int);
   void divergenceStress();
@@ -146,7 +154,7 @@ public:
   std::vector<float> tke; /**< turbulence kinetic energy */
   std::vector<float> CoEps; /**< dissipation rate */
 
-  LocalMixing *localMixing; /**< mixing length class */
+  std::unique_ptr<LocalMixing> localMixing; /**< owned mixing length class */
   std::vector<double> mixingLengths; /**< distance to the wall */
 
 
@@ -219,7 +227,7 @@ private:
 
   void allocateMemory();
   // store the wall classes
-  std::vector<TURBWall *> wallVec;
+  std::vector<std::unique_ptr<TURBWall>> wallVec;
 
   // some constants for turbulent model
   const float vonKar = 0.4;
@@ -228,18 +236,18 @@ private:
   // float dx, dy, dz;
 
   // input: store here for multiple time instance.
-  NetCDFInput *input;
+  NetCDFInput *input = nullptr;
 
   bool flagUniformZGrid = true; /**< :document this: */
-  bool flagNonLocalMixing; /**< :document this: */
+  bool flagNonLocalMixing = false; /**< :document this: */
   bool flagCompDivStress = true; /**< :document this: */
 
   // Mean trubulence quantities
-  float z0d, d0d;
-  float zRef, uRef, uStar;
-  float bldgH_mean, bldgH_max;
-  float terrainH_max;
+  float z0d = 0, d0d = 0;
+  float zRef = 0, uRef = 0, uStar = 0;
+  float bldgH_mean = 0, bldgH_max = 0;
+  float terrainH_max = 0;
 
   // Turbulence Fields Upper Bound (tij < turbUpperBound*uStar^2)
-  float turbUpperBound; /**< Turbulence fields upper bound */
+  float turbUpperBound = 20; /**< Turbulence fields upper bound */
 };

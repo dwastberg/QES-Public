@@ -66,8 +66,7 @@ protected:
 public:
   LocalMixing()
   {}
-  ~LocalMixing()
-  {}
+  virtual ~LocalMixing() = default;
 
   virtual void defineMixingLength(const WINDSInputData *, WINDSGeneralData *) = 0;
 };
