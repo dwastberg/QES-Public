@@ -110,7 +110,13 @@ int main(int argc, char *argv[])
   // Somehere... we initialize the QESDomain... some class that holds ifo for
   // Singleton????
   //
-  qes::Domain domain(WID->simParams->domain, WID->simParams->grid);
+  // Match the explicit physical layers used by the embedded runner. Passing
+  // only the nominal grid spacing silently discarded dz_value in this driver.
+  const auto &simulation = *WID->simParams;
+  qes::Domain domain = simulation.verticalStretching == 1
+    ? qes::Domain(simulation.domain[0], simulation.domain[1],
+                  simulation.grid[0], simulation.grid[1], simulation.dz_value)
+    : qes::Domain(simulation.domain, simulation.grid);
 
   // Generate the general WINDS data from all inputs
   WINDSGeneralData *WGD = new WINDSGeneralData(WID, domain, arguments.solveType);
